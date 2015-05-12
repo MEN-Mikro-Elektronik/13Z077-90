@@ -94,6 +94,8 @@
  */
 /*-------------------------------[ History ]---------------------------------
  * 
+ *
+ * ------------- end of cvs controlled source -------------------
  * $Log: men_16z077_eth.c,v $
  * Revision 1.45  2014/07/16 19:30:45  ts
  * R: 1. Compilerwarning: incompatible pointer type of .ndo_vlan_rx_add_vid
@@ -3930,7 +3932,7 @@ static int z77_retrieve_fpga_name( struct net_device *dev, CHAMELEON_UNIT_T *cha
 	 * we have no direct handle to FPGA table from CHAMELEON_UNIT_T,
 	 * so set up a temporary chamFctTable and call TableIdent().
 	 */
-	OSS_Init(MEN_Z77_DRV_NAME, &G_osh, 0);
+	OSS_Init(MEN_Z77_DRV_NAME, &G_osh);
 
 	/* check if we are on IO or memory mapped FPGA table */
     pci_read_config_dword( chamUnit->pdev, PCI_BASE_ADDRESS_0, &value32 );
