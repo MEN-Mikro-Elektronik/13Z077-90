@@ -1785,24 +1785,23 @@ static int z77_bd_setup_nondma(struct net_device *dev)
 	struct z77_private  *np = netdev_priv(dev);
 
 	/* careful, wipe out at Z077_BDBASE now , not Z077_BASE! */
-  memset((unsigned char*)(Z077_BDBASE + Z077_BD_OFFS), 0x00, 0x400 );
+	memset((unsigned char*)(Z077_BDBASE + Z077_BD_OFFS), 0x00, 0x400 );
 
 	/* Setup Tx BDs */
 	for (i = 0; i < Z077_TBD_NUM; i++ ) {
 
 		/* BdAddr = CPU centric BD address view (ioremapped BAR1) */
-    np->txBd[i].BdAddr = (unsigned long)((np->ddr_virt+(Z77_ETHBUF_SIZE*i)) + (np->instance * PCIDDR_OFFS ));
+	np->txBd[i].BdAddr = (unsigned long)((np->ddr_virt+(Z77_ETHBUF_SIZE*i)) + (np->instance * PCIDDR_OFFS ));
 
 		/* hdlDma = IP core centric address view (BAR1 start = 0x00000000) */
-    np->txBd[i].hdlDma = (unsigned long)(((Z77_ETHBUF_SIZE * i) | (1<<31))+( np->instance*PCIDDR_OFFS )  );
+	np->txBd[i].hdlDma = (unsigned long)(((Z77_ETHBUF_SIZE * i) | (1<<31))+( np->instance*PCIDDR_OFFS )  );
 
-		Z077_SET_TBD_ADDR(i, np->txBd[i].hdlDma );
-
-		/* cleanout the memory */
-		memset((char*)(np->txBd[i].BdAddr), 0, Z77_ETHBUF_SIZE);
-		/* let an IRQ be generated whenever packet is ready */
-		Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
-
+	Z077_SET_TBD_ADDR(i, np->txBd[i].hdlDma );
+		
+	/* cleanout the memory */
+	memset((unsigned long *)(np->txBd[i].BdAddr), 0x00, Z77_ETHBUF_SIZE);
+	/* let an IRQ be generated whenever packet is ready */
+	Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
 	}
 
 	/* Setup Receive BDs */
@@ -3521,9 +3520,9 @@ static int z77_pass_packet( struct net_device *dev, unsigned int idx )
 		skb->dev = dev;
 		skb_reserve(skb, NET_IP_ALIGN); /* 16 byte align the IP fields. */
 #if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
-        skb_copy_to_linear_data(skb,
-								(void*)(np->rxBd[idx].BdAddr | NO_CACHED_MEM),
-								pkt_len);
+		skb_copy_to_linear_data(skb,
+					(void*)(np->rxBd[idx].BdAddr | NO_CACHED_MEM),
+					pkt_len);
 #else
         eth_copy_and_sum(skb, (void*)(np->rxBd[idx].BdAddr | NO_CACHED_MEM),
 						 pkt_len, 0);
