@@ -94,6 +94,7 @@
  */
 /*-------------------------------[ History ]---------------------------------
  * 
+ * ts 18.05.2015  fixed ETHTOOL_OPS removement from 3.16 on
  *
  * ------------- end of cvs controlled source -------------------
  * $Log: men_16z077_eth.c,v $
@@ -1717,10 +1718,10 @@ static struct ethtool_ops z77_ethtool_ops = {
 	.get_settings 	= z77_ethtool_get_settings,
 	.set_settings 	= z77_ethtool_set_settings,
 	.nway_reset 	= z77_ethtool_nway_reset,
-	.get_link 		= z77_ethtool_get_link,
+	.get_link 	= z77_ethtool_get_link,
 	.get_msglevel 	= z77_ethtool_get_msglevel,
 	.set_msglevel 	= z77_ethtool_set_msglevel,
-	.self_test		= z77_ethtool_testmode,
+	.self_test	= z77_ethtool_testmode,
 };
 
 
@@ -2435,10 +2436,10 @@ static int __init probe_z77(struct net_device *dev)
 #endif
     dev->watchdog_timeo		= MY_TX_TIMEOUT;
 
-    #if LINUX_VERSION_CODE <= VERSION_CODE(2,6,23)
+#if LINUX_VERSION_CODE <= VERSION_CODE(2,6,23)
 	dev->poll				= z77_poll;
 	dev->weight 			= Z077_WEIGHT;
-    #endif
+#endif
 
 	/* use PHY address from passed module parameter */
 	/* np->mii_if.phy_id 		= phyadr[t]; */
@@ -2448,9 +2449,12 @@ static int __init probe_z77(struct net_device *dev)
 	np->mii_if.mdio_read 	= z77_mdio_read;
 	np->mii_if.mdio_write 	= z77_mdio_write;
 
-	/* Yes, we support the standard ethtool utility */
-	SET_ETHTOOL_OPS(dev, 	&z77_ethtool_ops);
-
+	/* YES, we support the standard ethtool utility */
+#if LINUX_VERSION_CODE < VERSION_CODE(3,16,0)
+	SET_ETHTOOL_OPS(dev,    &z77_ethtool_ops);                                                                                  
+#else
+	dev->ethtool_ops = &z77_ethtool_ops;
+#endif
 	/* Data setup done, now setup Connection */
 	if (chipset_init(dev, 0)) {
 		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
