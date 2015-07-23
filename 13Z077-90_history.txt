@@ -1,5 +1,13 @@
-===== [ History of fileset ART/13Z077-90/13Z077-90 ] =====
 
+commit e1eeda02cd1bf8f1e08a77682a0224cd22a8c2a6 (tag: 13Z077-90_01_17)
+Author: thomas.schnuerer <thomas.schnuerer@men>
+Date:   Thu Jul 23 13:44:22 2015 +0200
+
+    R: macros __DATE__ and __TIME__ are deprecated and lead to build warnings or errors
+    M: removed macros from init function
+
+
+------- end of cvs maintenance -----------
 
 -----[ Revision 1.16 ]-----
 [ 2014-07-17 18:34:37 by ts ]
@@ -39,7 +47,7 @@ M: removed doubled line in ethtool info get function
 
 -----[ Revision 1.11 ]-----
 [ 2013-03-08 17:48:25 by ts ]
-
+
 R: 1. upon TX timeouts driver could hang
    2. very high IRQ load (broadcast storm from looped switch) could cause hang
 M: 1. moved .ndo_tx_timeout handler into process context (reset_task)
@@ -73,7 +81,7 @@ M: 1. set and read duplexity handed over by ethtool to registers;
 
 -----[ Revision 1.7 ]-----
 [ 2011-03-16 19:18:08 by ts ]
-
+
 R: 1) driver did not support promiscuous mode of Z087 core
    2) old FPGA interrupt behaviour or complete full RXBDs could
       cause driver to hang
@@ -82,7 +90,7 @@ M: 1) added support of IFF_PROMISC flag passed from network applications
 
 -----[ Revision 1.6 ]-----
 [ 2010-11-25 17:51:39 by ts ]
-p
+
 R: 1) multiple ifconfig up/down or modprobes caused kernel oops
    2) driver failed to compile with kernel 2.6.30 and up (API change)
    3) new PHYs introduced in F218, F11S
@@ -102,13 +110,14 @@ M: 1) use updated driver file with new IRQ flags
 
 -----[ Revision 1.4 ]-----
 [ 2009-02-18 14:24:02 by GLeonhardt ]
+
 R:1. use for NIOS2
 M.1. possibility of usage without PCI
   2. possibility of usage without phy
 
 -----[ Revision 1.3 ]-----
 [ 2009-02-10 19:36:03 by ts ]
-d
+
 + support for P511 Dual Ethernet PMC, multiple 16Z087 instances
 + support for non-PCI-DMA mode where predictable system behaviour is desired
 + men_16z077_eth.c:
@@ -126,4 +135,3 @@ Fileset completed, Documentation revised by PU
 -----[ Revision 1.1 ]-----
 [ 2007-11-19 13:58:13 by ts ]
 Initial Revision
-
