@@ -4339,7 +4339,7 @@ static int __init men_16z077_init(void)
 	strncpy(i2cinfo.type, "EEP", 3);
 
 #endif
-	printk(KERN_INFO MEN_Z77_DRV_NAME " built %s %s\n", __DATE__, __TIME__);
+	printk(KERN_INFO MEN_Z77_DRV_NAME "\n");
 #if defined(MEN_Z77_USE_OWN_PHYACCESS)
 	printk(KERN_INFO MEN_Z77_DRV_NAME " using builtin PHY access functions.\n");
 #else
