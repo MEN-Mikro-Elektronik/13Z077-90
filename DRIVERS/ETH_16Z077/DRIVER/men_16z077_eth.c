@@ -2725,14 +2725,14 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
 			printk(KERN_INFO " => invalid MAC. Assigning random MAC:\n");
 			eth_hw_addr_random( dev );
-#else
-			printk(KERN_INFO " => invalid MAC, no MAC assignment\n");
 #endif
 			printk(KERN_INFO " %02x:%02x:%02x:%02x:%02x:%02x ",	dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5] );
 			z77_store_mac( dev );
 		} else {
 			printk(KERN_INFO " => no Board ID EEPROM found, assigning random MAC: ");
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
 			eth_hw_addr_random( dev );
+#endif
 			printk(KERN_INFO " %02x:%02x:%02x:%02x:%02x:%02x ",	dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5] );
 			z77_store_mac( dev );
 		}
