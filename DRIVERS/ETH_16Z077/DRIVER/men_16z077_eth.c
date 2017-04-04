@@ -1,100 +1,18 @@
 /*********************  P r o g r a m  -  M o d u l e ***********************/
 /*!
  *        \file  men_16z077_eth.c
- *
  *      \author  thomas.schnuerer@men.de
- *        $Date: 2014/07/16 19:30:45 $
+ *        $Date: 2017/03/21 $
  *    $Revision: 1.45 $
  *
  *        \brief driver for IP core 16Z087 (Ethernet cores).
  *               supports kernel 2.6 and 3.x
  *
- *     Switches: NIOS_II  			defined for build on Nios II based systems
- *				 CONFIG_MENEM1		defined for build with MEN EM01A/N
- *				 CONFIG_MENEM9      defined for build with MEN EM09
- *  			 CONFIG_MENEP05     defined for build with MEN EP05/6/7
- *				 NO_PHY             defined for specific PHY-less HW
- *				 MEN_MM1            defined for build with MEN MM1
- *
- *
- *
- * DESCRIPTION
- *
- * The driver supports the IP core 16Z087 derived from Opencores ETH MAC
- * ( www.opencores.org )
- *
- * \verbatim
- * Description of Registers:
- *
- * Name          Address     Width   Access  Description
- * -------------------------------------------------------------------------
- * MODER         0x00        32      RW      Mode Register
- * INT_SOURCE    0x04        32      RW      Interrupt Source Register
- * INT_MASK      0x08        32      RW      Interrupt Mask Register
- * IPGT          0x0C        32      RW      Back to Back Inter Packet
- *                                           GapRegister
- * IPGR1         0x10        32      RW      Non Back to Back Inter Packet
- *                                           Gap Register 1
- * IPGR2         0x14        32      RW      Non Back to Back Inter Packet
- *                                           Gap Register 2
- * PACKETLEN     0x18        32      RW      Packet Length (minimum and
- *                                           maximum) Register
- * COLLCONF      0x1C        32      RW      Collision and Retry Configuration
- * TX_BD_NUM     0x20        32      RW      Transmit Buffer Descriptor Number
- * CTRLMODER     0x24        32      RW      Control Module Mode Register
- * MIIMODER      0x28        32      RW      MII Mode Register
- * MIICOMMAND    0x2C        32      RW      MII Commend Register
- * MIIADDRESS    0x30        32      RW      MII Address Register Contains
- *                                           the PHY address and the register
- *  										 within the PHY address
- * MIITX_DATA    0x34        32      RW      MII Transmit Data The data to
- *                                           be transmitted to the PHY
- * MIIRX_DATA    0x38        32      RW      MII Receive Data The data
- *                                           received from the PHY
- * MIISTATUS     0x3C        32      RW      MII Status Register
- *
- * MAC_ADDR0     0x40        32      RW      MAC Individual Address0 The LSB
- *                                           four bytes of the MAC address
- * MAC_ADDR1     0x44        32      RW      MAC Individual Address1 The MSB
- *                                           two bytes of the MAC
- * ETH_HASH0_ADR 0x48        32      RW      HASH0 Register
- * ETH_HASH1_ADR 0x4C        32      RW      HASH1 Register
- * ETH_TXCTRL    0x50        32      RW      Transmit Control Register
- *
- *
- * original ETH OpenCore:  BDs start at Z077_BD_OFFS (0x400) after ChamBase.
- *
- * Z077_BDBASE  = ChamBase + 0x400
- * Z077_BD_OFFS = 0x400
- * +--------------+
- * |			  |
- * |--------------|- Rx BD Start
- * |   	   	   	  |
- * |--------------|- TX Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
- * |XXXXXXXXXXXXXX|  Ctrl Regs
- * +--------------+- Chameleon Base Address
- *
- *
- * New Core: BDs reside in RAM, Address must be 10bit-aligned
- *
- * Z077_BDBASE  = pDrvCtrl->bdBase;
- * Z077_BD_OFFS = 0
- *
- * +--------------+
- * |			  |
- * |--------------|- Tx BD Start
- * |   	   	   	  |
- * +--------------+- Rx Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
- *
- *
- *\endverbatim
- * For tests with RAM based images do
- * route add -net 192.168.1.0 netmask 255.255.255.0 dev eth0 gw 192.1.1.22
- *
+ *     Switches:
+ *  			 MENEP05     defined for build with MEN EP05/6/7
+ *				 NO_PHY      defined for specific PHY-less HW
  */
 /*-------------------------------[ History ]---------------------------------
- * 
- * ts 18.05.2015  fixed ETHTOOL_OPS removement from 3.16 on
  *
  * ------------- end of cvs controlled source -------------------
  * $Log: men_16z077_eth.c,v $
@@ -123,7 +41,7 @@
  * Revision 1.40  2013/07/10 18:16:48  ts
  * R: minimum frame len 0x40 made problem in customer application due
  *    to PACKLEN register interpreting the value without FCS
- * M: changed header file, reverted this files last work checking for 
+ * M: changed header file, reverted this files last work checking for
  *    other CPU back to 1.38 to avoid other side effects
  *
  * Revision 1.39  2013/04/19 17:41:40  ts
@@ -339,7 +257,7 @@
  * Initial Revision
  *
  *---------------------------------------------------------------------------
- * (c) Copyright 2012 by MEN mikro elektronik GmbH, Nuremberg, Germany
+ * (c) Copyright 2017 by MEN mikro elektronik GmbH, Nuremberg, Germany
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -378,26 +296,19 @@
 #include <linux/i2c.h>
 #include <linux/pci.h>
 #include <linux/mii.h>
+#include <asm/page.h>
 
-#if defined(CONFIG_MENEP05)
-# include <linux/of_platform.h>
-#endif
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)  /* only support from 2.6.30 on */
 
 #include <MEN/men_typs.h>
 #include <MEN/oss.h>
 #include <MEN/mdis_err.h>
 #include <MEN/dbg.h>
 #include <MEN/men_chameleon.h>
-#if defined(MEN_MM1)  /* init SMB2 lib for EEPROM readout */
-# include <MEN/smb2.h>
-#endif
-#include <MEN/sysparam2.h>
-#include <MEN/sysdep.h>
+#include <MEN/smb2.h>
 #include "men_16z077_eth.h"
 
-/*-----------------------------+
- |  DEFINES                    |
- +-----------------------------*/
+/* DEFINES */
 
 /* # of supported Z87 Instances in the system */
 #define NR_ETH_CORES_MAX		8
@@ -405,12 +316,7 @@
 #define MII_ACCESS_TIMEOUT 		10000
 /*  max. loops to wait for Idle condition */
 #define IP_CORE_TIMEOUT 		200
-
-/* size and BAR of P511's SDRAM: 32M */
-#define P511_BAR1_SDRAMSIZE 	0x2000000
-#define P511_SDRAM_BAR			1
 #define PHY_MAX_ADR				31
-
 #define MAX_MCAST_LST			64			/* we store up to 64 addresses */
 #define MAC_ADDR_LEN			6			/* MAC len in byte */
 #define MCAST_HASH_POLYNOM  	0x04C11DB7	/* CRC32 polynom for hash calculation */
@@ -418,19 +324,26 @@
 #define MCAST_MULT_SHFT 		26			/* bit shift to calculate hash bin */
 #define MCAST_HASH_MASK			0x3f    	/* pass up only lower 6 bit */
 #define LEN_CRC					4			/* additional CRC bytes present in Frames */
-#define I2C_MAX_ADAP_CNT		32			/* max. # of I2C adapters to query ID EEPROM */
-#define MEN_F1x_EEID_SMB_ADR   	(0xae>>1)	/* ID EEPROM addres on F1x cards = 0x57 */
-#define ID_EE_SERN_OFF 			3			/* serial nr. offset in ID EEPROM */
-#define ID_EE_SERN_LEN			4			/* length of serial nr. in ID EEPROM */
-#define ID_EE_NAME_OFF 			9			/* board name offset in ID EEPROM */
-#define ID_EE_NAME_LEN			6			/* length of name in ID EEPROM */
-#define IC_BOARD_NAME_LEN		4			/* length of board in IC file name */
+#define I2C_MAX_ADAP_CNT		16			/* max. # of I2C adapters to query ID EEPROM */
+
+#if 0
+# define MEN_BRDID_EE_ADR   	0x57		/* ID EEPROM addres on F1x cards = 0x57 */
+# define ID_EE_NAME_OFF 		9			/* board name offset in ID EEPROM */
+# define MEN_BRDID_EE_MAC_OF 	0x90		/* begin of MAC(s) in Board ID EEPROM */
+#else
+# warning !!! set MEN_BOARDID_EE_ADR back to 0x57 !!! testdata only !!!
+# define ID_EE_NAME_OFF 		0x71		/* board name offset in ID EEPROM 'B' from BenQ */
+# define MEN_BRDID_EE_ADR   	0x50
+# define MEN_BRDID_EE_MAC_OF 	0x90		/* begin of MAC(s) in Board ID EEPROM */
+#endif
+
+# define ID_EE_NAME_LEN			6			/* length of name in ID EEPROM */
 
 /* all used IRQs on the Z87 */
 #define Z077_IRQ_ALL (OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE | OETH_INT_BUSY | OETH_INT_TXB)
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
-#if LINUX_VERSION_CODE > VERSION_CODE(3,1,0)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
 # define Z87_BIT_MASK_32BIT		DMA_BIT_MASK(32)
 #else
 # define Z87_BIT_MASK_32BIT		DMA_32BIT_MASK
@@ -442,59 +355,25 @@
 # define Z87_VLAN_FEATURES    (NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
 #endif
 
-
-#ifndef TRUE
-# define TRUE 1
-#endif
-#ifndef FALSE
-# define FALSE 0
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0)
+# define vlan_tag_present_func(x) 		vlan_tx_tag_present(x)
+# define vlan_tag_get_func(x) 			vlan_tx_tag_get(x)
+#else
+# define vlan_tag_present_func(x) 		skb_vlan_tag_present(x)
+# define vlan_tag_get_func(x) 			skb_vlan_tag_get(x)
 #endif
 
 #ifdef NIOS_II
-# include <asm/cacheflush.h>
-# include <asm/uaccess.h>
-# define NO_CACHED_MEM 0x80000000
-#else
-# define NO_CACHED_MEM 0x0
+# warning NIOS_II (non-MMU driver) not longer supported. Use older driver if needed!
 #endif
-
-#define PCIDDR_OFFS 0x80000
 
 #define VLAN_TAG_SIZE			4		/* how much longer VLAN frames are */
 #define ETH_SRCDST_MAC_SIZE		12		/* combined length or source and dest MAC addr */
 
-
-/* For the DMA write physical addresses into BDs are needed. unfortunately
- * they can be in different defines */
-#ifdef CONFIG_KERNEL_START
-# define VIRTUAL_MEM_OFFSET  CONFIG_KERNEL_START
-#else
-# ifdef CONFIG_PAGE_OFFSET
-# define VIRTUAL_MEM_OFFSET  CONFIG_PAGE_OFFSET
-# endif
-#endif
-
-/* if none of the above is defined exit to the kernel default Value */
-#ifndef VIRTUAL_MEM_OFFSET
-#define VIRTUAL_MEM_OFFSET    0xc0000000
-#endif
-
 #if defined(CONFIG_MENEP05)
-#define MENEP05_Z77_INSTNAME 	"instance"
-#define MENEP05_Z77_PHYADR   	"phy-address"
-#define MENEP05_Z77_MACADR  	"local-mac-address"
- #if defined(CONFIG_MEN_16Z077_GPSI) && !defined(NO_PHY)
-  #define NO_PHY
- #endif
+#error EP05 no longer supported
 #endif
 
-
-#ifndef WARN_ONCE
-/* if WARN_ONCE not supported, ignore output */
-#define WARN_ONCE(condition, format...)
-#endif
-
-#define Z77_DEFAULT_MAC 	"ff:ff:ff:ff:ff:ff"
 
 /*
  * Macro for use in conjunction with ethtool -s eth.. msglvl <n>
@@ -502,9 +381,9 @@
  */
 
 #ifdef DBG
-#define Z77DBG(lvl,msg...) 	  if (np->msg_enable >= lvl) \
-                                     printk( msg );
-# else
+#define Z77DBG(lvl,msg...) 	  if (np->msg_enable >= lvl)	\
+		printk( msg );
+#else
 #define Z77DBG(lvl,msg...) 	  do {} while (0)
 #endif
 
@@ -512,25 +391,10 @@
 #define PHY_ID2_KSZ8041_1	0x1512
 #define PHY_ID2_KSZ8041_2	0x1513
 
-static OSS_HANDLE		*G_osh;		/* OSS handle */
-
-/* sanity checks, this one isnt really necessary anymore since Z87 */
-#if (Z077_TBD_NUM < 1) || (Z077_RBD_NUM < 1)
-# error Z077_TBD/RBD_NUM must be at least 1 !
-#endif
-
-/* #define DO_NETDEV_TIMEOUT_TEST */
-#undef DO_NETDEV_TIMEOUT_TEST
-
-#ifdef DO_NETDEV_TIMEOUT_TEST
-#warning "!!!!!!!!!!!!! ATTENTION!!!!!!!!!!!!! Netdev Watchdog timeout test enabled! no production driver!"
-#endif
-
 /*--------------------------------+
- |  TYPEDEFS                      |
- +--------------------------------*/
+  |  TYPEDEFS                      |
+  +--------------------------------*/
 
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
 /* Add more possible PHY IDs here */
 static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
 	{ 0x0022, "Micrel "			},		/* 	Micrel PHY on EM01				*/
@@ -540,7 +404,6 @@ static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
 	{ 0x000d, "MEN PHY"			},		/*  dummy PHY in F218 rear Ethernet	*/
 	{ 0xffff, ""}	/* end marker */
 };
-#endif
 
 /**
  * z077_private: main data struct for the driver \n
@@ -548,95 +411,60 @@ static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
  */
 /*@{*/
 struct z77_private {
-	long 			open_time;		/*!< how long is device open already */
-    long	  		flags;			/*!< Our local flags 				 */
-	u32  			instance;		/*!< chameleon instance if more Z87  */
-	u32  			instCount;		/*!< global probe counter for phyadr[] */
-	u32				nCurrTbd;		/*!< currently used Tx BD 			*/
-	u32				txIrq;			/*!< last serviced TX IRQ			*/
-	u32				modCode;		/*!< chameleon modCode				*/
-  unsigned long		bdBase;			/*!< start address of BDs in RAM 	*/
-	u32 			bdOff;			/*!< BDoffset from BAR start 		*/
-	u32 			tbdOff;			/*!< TX Buffer offset to phys base  */
-	u32 			rbdOff;			/*!< TX Buffer offset to phys base  */
-	u32				serialnr;		/*!< serial nr. of P51x or MM1 		*/
-	u32				board;			/*!< board identifier of this eth 	*/
-	u32				mac_offset;		/*!< board specific MAC part		*/
-	u32				gotBusy;		/*!< BUSY irq flag, clears in NAPI  */
-#if defined( MEN_MM1 )
-	SMB_DESC_PORTCB smb2desc;       /*!< SMB2 descriptor for EEPROM     */
-	u32	 			osHdl;			/*!< OSS Handle 					*/
-	void            *smbHdlP;		/*!< SMB2 Handle 					*/
-#endif
-	struct work_struct reset_task;  /*!< process context reseting (ndo_tx_timeout) */
-#ifdef DO_NETDEV_TIMEOUT_TEST
-	u32				nCount;			/*!< test counter */
-	u32				doNDOtest;		/*!< test counter */
-#endif
-	struct timer_list timer;		/*!< period timer for linkchange poll */
-	u32				timer_offset;	/*!< offset for link change poll */
-	u32				prev_linkstate;	/*!< previous link state */
+	long 				open_time;			/*!< how long is device open already */
+    long	  			flags;				/*!< Our local flags 				 */
+	u32  				instance;			/*!< chameleon instance if more Z87  */
+	u32  				instCount;			/*!< global probe cnt. for phyadr[]  */
+	u32					nCurrTbd;			/*!< currently used Tx BD 			*/
+	u32					txIrq;				/*!< last serviced TX IRQ			*/
+	u32					modCode;			/*!< chameleon modCode				*/
+	unsigned long		bdBase;				/*!< start address of BDs in RAM 	*/
+	u32 				bdOff;				/*!< BDoffset from BAR start 		*/
+	u32 				tbdOff;				/*!< TX Buffer offset to phys base  */
+	u32 				rbdOff;				/*!< TX Buffer offset to phys base  */
+	u32					serialnr;			/*!< serial nr. of P51x or MM1 		*/
+	u32					board;				/*!< board identifier of this eth 	*/
+	u32					gotBusy;			/*!< BUSY irq flag, clears in NAPI  */
+	SMB_DESC_PORTCB 	smb2desc;       	/*!< SMB2 descriptor for EEPROM     */
+	void            	*smbHdlP;			/*!< SMB2 Handle 					*/
+	struct work_struct 	reset_task; 		/*!< process context reseting (ndo_tx_timeout) */
+	struct timer_list 	timer;				/*!< period timer for linkchange poll */
+	u32					timer_offset;		/*!< offset for link change poll 	*/
+	u32					prev_linkstate;		/*!< previous link state */
 #if defined(Z77_USE_VLAN_TAGGING)
-	struct vlan_group		*vlgrp; /*!< VLAN tagging group */
-	u32				err_vlan;		/*!< VLAN error flags/count */
-# define RXD_VLAN_MASK				0x0000ffff
-# define VLAN_ETHER_TYPE 			0x8100
+	struct vlan_group	*vlgrp; 			/*!< VLAN tagging group */
+	u32					err_vlan;			/*!< VLAN error flags/count */
+# define RXD_VLAN_MASK		0x0000ffff
+# define VLAN_ETHER_TYPE 	0x8100
 #endif
-	u8					mcast_lst[MAX_MCAST_LST][MAC_ADDR_LEN]; /*!< store Mcast addrs */
-
-	/* special: for P511 with nodma feature */
-	u32 				ddr_len;		   	/*!< P511 PCI memory length */
-	u32  				ddr_addr;		   	/*!< P511 PCI memory phys. address */
-	void* 				ddr_virt;		   	/*!< P511 PCI memory virt. address */
-	u32  				coreRev;			/*!< Z87 revision (1=with Rx count)	*/
-	Z077_BD				txBd[Z077_TBD_NUM];	/*!< Tx Buffer Descriptor address */
-	Z077_BD				rxBd[Z077_RBD_NUM]; /*!< Rx Buffer Descriptor address */
-	struct net_device_stats stats;		/*!< status flags to report to IP */
-	spinlock_t 			lock;			/*!< prevent concurrent accesses */
-	struct pci_dev		*pdev;			/*!< the pci device we belong to */
-#ifndef MEN_Z77_USE_OWN_PHYACCESS
-	struct phy_device	*phy_dev;		/*!< phy device attached to us*/
-	struct mii_bus		*mii_bus;		/*!< MDIO bus structure phy is attached */
-	u32 				duplex;			/*!< duplexity (half or full) */
-	u32					speed;			/*!< speed (10 or 100)	*/
-#endif
-	struct mii_if_info 	mii_if;			/*!< MII API hooks, info */
-	u32 				msg_enable;		/*!< debug message level */
-    #if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
-	struct napi_struct 		napi;       /*!< NAPI struct */
-    #endif
-	struct net_device  		*dev;       /*!< net device */
+	u8					mcast_lst[MAX_MCAST_LST][MAC_ADDR_LEN]; /*!< store Mcast addrs	*/
+	u32  				coreRev;			/*!< Z87 revision (1=with Rx count)			*/
+	Z077_BD				txBd[Z077_TBD_NUM];	/*!< Tx Buffer Descriptor address 			*/
+	Z077_BD				rxBd[Z077_RBD_NUM]; /*!< Rx Buffer Descriptor address 			*/
+	struct net_device_stats stats;			/*!< status flags to report to IP 			*/
+	spinlock_t 			lock;				/*!< prevent concurrent accesses 			*/
+	struct pci_dev		*pdev;				/*!< the pci device we belong to 			*/
+	struct mii_if_info 	mii_if;				/*!< MII API hooks, info 					*/
+	u32 				msg_enable;			/*!< debug message level 					*/
+	struct napi_struct 	napi;       		/*!< NAPI struct 							*/
+	struct net_device  	*dev;       		/*!< net device 							*/
 };
 /*@}*/
 
 static int	z77_open(struct net_device *dev);
 static int	z77_send_packet(struct sk_buff *skb, struct net_device *dev);
-#if LINUX_VERSION_CODE >= VERSION_CODE(2,6,19)
 static irqreturn_t z77_irq(int irq, void *dev_id);
-#else
-static irqreturn_t z77_irq(int irq, void *dev_id, struct pt_regs *regs);
-#endif
-
 static int	z77_close(struct net_device *dev);
 static struct	net_device_stats *z77_get_stats(struct net_device *dev);
 static void z77_tx_timeout(struct net_device *dev);
 static void z77_rx_err(struct net_device *dev );
 static void z77_tx_err(struct net_device *dev );
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
 static int z77_poll(struct napi_struct *napi,int budget);
-#else
-static int z77_poll(struct net_device *dev,int *budget);
-#endif
-static int chipset_init(struct net_device *dev, unsigned int donegotiate);
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
+static int chipset_init(struct net_device *dev, unsigned int first_init);
 static int z77_phy_reset(struct net_device *dev, u8 phyAddr);
 static int z77_phy_identify(struct net_device *dev, u8 phyAddr);
 static int z77_phy_init(struct net_device *dev);
 static int z77_init_phymode(struct net_device *dev, u8 phyAddr);
-#else
-static int z77_mii_bus_read( struct mii_bus *bus, int phy_id, int location);
-static int z77_mii_bus_write( struct mii_bus *bus, int phy_id, int location, u16 val);
-#endif
 static int z77_pass_packet( struct net_device *dev, unsigned int idx );
 static int z77_mdio_read(struct net_device *dev, int phy_id, int location);
 static void z77_mdio_write(struct net_device *dev, int phy_id, int location, int val);
@@ -645,20 +473,18 @@ static int z77_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd);
 static void z77_hash_table_setup(struct net_device *dev);
 static int ether_gen_crc(struct net_device *dev, u8 *data);
 #if defined(Z77_USE_VLAN_TAGGING)
-# if LINUX_VERSION_CODE < VERSION_CODE(3,0,0) 
+# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 static void z77_vlan_rx_register(struct net_device *dev, struct vlan_group *grp);
 static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid);
 # endif
 static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, unsigned short vid);
 #endif
-
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
 static void z77_timerfunc(unsigned long);
-#endif
+
 
 /*--------------------------------+
- |  GLOBALS                       |
- +--------------------------------*/
+  |  GLOBALS                       |
+  +--------------------------------*/
 
 /* filled depending on found IP core, either "16Z077" or "16Z087" */
 static char cardname[16];
@@ -674,49 +500,31 @@ static const char *phycaps[]={
 /*
  * module parameters
  */
-static char* mode 	 = "AUTO";
-static int  nrcores  = NR_ETH_CORES_MAX;
-static int  nodma    = 0;
-static int  dbglvl   = 0;
-static int  macadr   = 0;
-static int  serialnr = 0;
-#ifdef MEN_MM1
-static int  writemac = 0x0;
-#endif
+static char*	mode 	 = "AUTO";
+static int  	nrcores  = NR_ETH_CORES_MAX;
+static int  	dbglvl   = 0;
+static char*  	macadr   = 0;
 
 /* global to count detected instances */
 static int G_globalInstanceCount = 0;
 
 /* array to tokenize / store multiple phy modes */
 #define PHY_MODE_NAME_LEN	(5+1)
-static char G_phyMode[NR_ETH_CORES_MAX][PHY_MODE_NAME_LEN];   /* sizeof("100FD\0"), longest string allowed */
-static int  G_sernum=0;		/* serial number of CPU found in ID EEprom */
+#define MAC_ADDR_NAME_LEN   (13+1)
 
-#ifdef CONFIG_MENEM9
-int	phyadr[NR_ETH_CORES_MAX] = {0,1,2,3,4,5,6,7}; 	/* PHY addresses */
-#else
+static char G_macAddr[NR_ETH_CORES_MAX][MAC_ADDR_NAME_LEN];   /* sizeof("00c03a123456:\0"), longest string allowed */
+static char G_phyMode[NR_ETH_CORES_MAX][PHY_MODE_NAME_LEN];   /* sizeof("100FD\0"), longest string allowed */
+
 int	phyadr[NR_ETH_CORES_MAX] = {0,0,0,0,0,0,0,0}; 	/* PHY addresses */
-#endif /*CONFIG_MENEM9*/
 
 module_param(mode, charp, 0 );
 MODULE_PARM_DESC( mode, "PHY mode: AUTO,10HD,10FD,100HD,100FD. default: AUTO");
 module_param_array( phyadr, int, (void*)&nrcores, 0664 );
 MODULE_PARM_DESC( phyadr, "Address of PHY connected to each Z87 unit");
-module_param( nodma, int, 0664 );
-MODULE_PARM_DESC( nodma, "0: standard (DMA) function 1: P511 (no DMA) mode");
 module_param( dbglvl, int, 0664 );
 MODULE_PARM_DESC( dbglvl, "initial debug level. (0=none, 3=very verbose)");
-module_param( macadr, int, 0664 );
-MODULE_PARM_DESC( macadr, "forced MAC address to use");
-#ifdef MEN_MM1
-module_param( writemac, int, 0664 );
-MODULE_PARM_DESC( writemac, "1: program MM1 serial Nr. as MAC. USE AT OWN RISK!");
-module_param( sernum, int, 0664 );
-MODULE_PARM_DESC( serialnr, "serial number of MM1 (USE AT OWN RISK!)");
-#else
-module_param( serialnr, int, 0664 );
-MODULE_PARM_DESC( serialnr, "serial number of board");
-#endif
+module_param( macadr, charp, 0664 );
+MODULE_PARM_DESC( macadr, "override MAC address to use: macadr=MAC0,MAC1,MAC2... e.g. macadr=00c03aab2000,00c03aab4000... . Use with care!");
 
 /* helper to keep Register descriptions in a comfortable struct */
 const Z077_REG_INFO z77_reginfo[] = {
@@ -756,6 +564,23 @@ const Z077_REG_INFO z77_reginfo[] = {
 	{"TXERRCNT2 ", Z077_REG_TXERRCNT2	},
 	{NULL, 0xffff} /* end mark */
 };
+
+
+/*****************************************************************************/
+/** Write MAC address from struct net to Registers MAC_ADDR0/1
+ *
+ *
+ * \param dev		\IN net_device struct for this NIC
+ */
+static void z77_store_mac(struct net_device *dev)
+{
+
+	Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR0,
+				dev->dev_addr[2] << 24 | dev->dev_addr[3] << 16 | dev->dev_addr[4] << 8  | dev->dev_addr[5]);
+	Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR1,
+				dev->dev_addr[0] << 8 | dev->dev_addr[1] );
+}
+
 
 /*****************************************************************************/
 /** Handle multicast and promiscuous mode set.
@@ -800,7 +625,7 @@ static void z77_set_rx_mode(struct net_device *dev)
 	/*
 	 * check independently if current flag setting and requested flags differ. Otherwise
 	 * _PRO is set every time _IAM changes and vice versa.
-	 */
+										  */
 	if ( dev->flags & IFF_PROMISC) {
 		if ( !(Z77READ_D32(Z077_BASE, Z077_REG_MODER) & OETH_MODER_PRO)) {
 			/* promisc was cleared, set it */
@@ -887,7 +712,7 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 static void z77_hash_table_setup(struct net_device *dev)
 {
 	int i = 0;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
 	struct netdev_hw_addr *ha = NULL;
 #else
 	struct dev_mc_list *ptr=NULL;
@@ -958,7 +783,7 @@ static void z77_hash_table_setup(struct net_device *dev)
 }
 
 /* new API: net_device_ops moved out of struct net_device in own ops struct */
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,30)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
 
 /******************************************************************************
  ** set new MAC address: unused here
@@ -979,14 +804,10 @@ static int z77_set_mac_address(struct net_device *dev, void *p)
 	/* shut-down */
 	z77_reset( dev );
 
-	/* set MAC Address in MAC_ADDR0, MAC_ADDR1 */
+	/* store MAC Address to in MAC_ADDR0, MAC_ADDR1 */
 	spin_lock_irqsave(&np->lock, flags);
 
-	Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR0,
-				  dev->dev_addr[2] << 24 | dev->dev_addr[3] << 16 | \
-				  dev->dev_addr[4] << 8  | dev->dev_addr[5]);
-	Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR1,
-				  dev->dev_addr[0] << 8 | dev->dev_addr[1] );
+	z77_store_mac( dev );
 
 	/* force link-up */
 	np->prev_linkstate = 0;
@@ -994,9 +815,6 @@ static int z77_set_mac_address(struct net_device *dev, void *p)
 	spin_unlock_irqrestore (&np->lock, flags);
 	return 0;
 }
-
-
-
 
 /******************************************************************************
  ** set new MTU for the interface
@@ -1022,33 +840,16 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_change_mtu			= z77_change_mtu,
 	.ndo_validate_addr		= eth_validate_addr,
 	.ndo_set_mac_address	= z77_set_mac_address,
-#if defined(Z77_USE_VLAN_TAGGING) && defined(Z77_VLAN_OPS_CHANGE)
-#if LINUX_VERSION_CODE < VERSION_CODE(3,0,0) 
+#if defined(Z77_USE_VLAN_TAGGING)
+# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 	.ndo_vlan_rx_register	= z77_vlan_rx_register,
 	.ndo_vlan_rx_kill_vid   = z77_vlan_rx_kill_vid,
-#endif
+# endif
 	.ndo_vlan_rx_add_vid	= z77_vlan_rx_add_vid,
 #endif
 
 };
 #endif
-
-
-#ifdef MEN_MM1
-/******************************************************************************
- ** z77_scl_in - read SCL Pin on SMB Register
- *
- * \param dat	\IN general purpose data, the Z87 instances base address
- *
- * \return		pin state: 0 or 1
- */
-static int z77_scl_in(void *dat)
-{
-	int pin=0;
-	volatile unsigned int tmp = Z77READ_D32( dat, Z077_REG_SMBCTRL);
-	pin = tmp & SMB_REG_SCL ? 1 : 0;
-	return pin;
-}
 
 /******************************************************************************
  ** z77_sda_in - read SDA Pin on SMB Register
@@ -1099,12 +900,12 @@ static int z77_sda_out(void *dat, int pinval)
  * \param dat	 \IN general purpose data, the Z87 instances base address
  * \param pinval \IN pin state, 0 or 1
  *
- * \return		 0 if no difference or 1 if pin state not equal to pinval
+ * \return 0 if no difference or 1 if pin state not equal to pinval
  */
 static int z77_scl_out(void *dat, int pinval)
 {
 
-	volatile unsigned int tmp 		= 	Z77READ_D32( dat, Z077_REG_SMBCTRL);
+	volatile unsigned int tmp = Z77READ_D32( dat, Z077_REG_SMBCTRL);
 	if (pinval)
 		tmp |=SMB_REG_SCL;
 	else
@@ -1112,10 +913,7 @@ static int z77_scl_out(void *dat, int pinval)
 	Z77WRITE_D32( dat, Z077_REG_SMBCTRL, tmp );
 	return(0);
 }
-#endif
 
-
-#if defined (MEN_Z77_USE_OWN_PHYACCESS)
 /******************************************************************************
  ** z77_timerfunc - periodically check the link state
  *
@@ -1146,8 +944,6 @@ static void z77_timerfunc(unsigned long dat)
 	np->timer.expires = jiffies + np->timer_offset;
  	add_timer(&np->timer);
 }
-#endif /* defined (MEN_Z77_USE_OWN_PHYACCESS) */
-
 
 /******************************************************************************
  ** z77_regdump - Dump the contents of the 16Z077/087 Registers and BDs
@@ -1160,10 +956,9 @@ static int z77_regdump( struct net_device *dev )
 {
 	u32 adr	= 0;
 	u32 tmp = 0;
-#ifndef NO_PHY
  	u16 dat = 0;
-#endif
-  unsigned long i = 0;
+
+	unsigned long i = 0;
 	struct z77_private *np = netdev_priv(dev);
 
 	printk( KERN_INFO MEN_Z77_DRV_NAME " (netdevice '%s') base Addr: 0x%08lx\n",
@@ -1181,7 +976,6 @@ static int z77_regdump( struct net_device *dev )
 
 	printk( KERN_INFO "current TXBd 0x%02x\n", np->nCurrTbd);
 
-#ifndef NO_PHY
 	printk( KERN_INFO "----- MII Registers -----\n");
 	printk( KERN_INFO "instance\t\t\t0x%02x\n", np->instance );
 	printk( KERN_INFO "PHY ADR\t\t\t0x%02x\n", 	np->mii_if.phy_id );
@@ -1194,7 +988,7 @@ static int z77_regdump( struct net_device *dev )
 	dat = z77_mdio_read(dev, np->mii_if.phy_id , MII_BMSR );
 
 	printk( KERN_INFO "MII_BMSR\t\t0x%04x\tLink: %s\n",
-		   dat, (dat & BMSR_LSTATUS) ? "up" : "down" );
+			dat, (dat & BMSR_LSTATUS) ? "up" : "down" );
 
 	dat = z77_mdio_read(dev, np->mii_if.phy_id , MII_PHYSID1 );
 	printk( KERN_INFO "MII_PHYSID1\t\t0x%04x\n", dat );
@@ -1239,14 +1033,14 @@ static int z77_regdump( struct net_device *dev )
 		printk( KERN_INFO "unknown)\n");
 		break;
 	}
-#endif
+
 	if (np->msg_enable >= ETHT_MESSAGE_LVL2) {
 		printk(KERN_INFO "------------------ TX BDs: -------------------\n");
 		for (i = 0; i < Z077_TBD_NUM; i++ ) {
 			adr = Z077_BD_OFFS + (i * Z077_BDSIZE);
 			printk(KERN_INFO "%02x STAT: 0x%04x LEN: 0x%04x  ADR 0x%08x\n", i,
-	     Z077_GET_TBD_FLAG(i, 0xffff), 
-	     Z077_GET_TBD_LEN(i),
+				   Z077_GET_TBD_FLAG(i, 0xffff),
+				   Z077_GET_TBD_LEN(i),
 				   Z077_GET_TBD_ADDR(i));
 		}
 
@@ -1312,55 +1106,6 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	return retVal;
 }
 
-#if !defined(MEN_Z77_USE_OWN_PHYACCESS)
-/******************************************************************************
- ** z77_mii_bus_read	Wrapper for MII read access with phy access functions
- *
- * \param bus		\IN mii_bus struct for this NIC
- * \param phy_id	\IN address of the PHY
- * \param location	\IN net_device struct for this NIC
- *
- * \return			0 or -ENODEV if bus or net_device not initialized
- */
-static int z77_mii_bus_read( struct mii_bus *bus, int phy_id, int location)
-{
-	if (bus) {
-		struct net_device *dev = (struct net_device *)bus->priv;
-		if (dev)
-			return z77_mdio_read( dev, phy_id, location );
-		else
-			return -ENODEV;
-	}
-	else
-		return -ENODEV;
-}
-
-/******************************************************************************
- ** z77_mii_bus_write  	Wrapper for MII write access with phy access functions
- *
- * \param bus		\IN mii_bus struct for this NIC
- * \param phy_id	\IN address of the PHY
- * \param location	\IN net_device struct for this NIC
- * \param val 		\IN value to write to MII Register
- *
- * \return			0 or -ENODEV if bus or net_device not initialized
- */
-static int z77_mii_bus_write( struct mii_bus *bus, int phy_id,
-							   int location, u16 val)
-{
-	if (bus) {
-		struct net_device *dev = (struct net_device *)bus->priv;
-		if (dev) {
-			z77_mdio_write( dev, phy_id, location, val );
-			return 0;
-		} else
-			return -ENODEV;
-	} else
-		return -ENODEV;
-}
-#endif /* !defined(MEN_Z77_USE_OWN_PHYACCESS) */
-
-
 /******************************************************************************
  ** z77_parse_mode    simple strtok replacement to split up mode string.
  *                    delimiter is ',' as with all module array arguments.
@@ -1397,6 +1142,48 @@ static int z77_parse_mode(int len, char *pChar)
 
 	return j;
 }
+
+
+/******************************************************************************
+ ** z77_parse_mac    simple strtok replacement to split up macaddr string.
+ *                    delimiter is ',' as with all module array arguments.
+ * \return			0 on success or -1 on error
+ */
+static int z77_parse_mac(int len, char *pChar)
+{
+	unsigned int arglen = 0;
+	int i,j=0,k=0;
+
+	if ( (pChar == NULL) || (len == 0))
+		return -1;
+
+	arglen = len;
+	memset(G_macAddr, 0x0, sizeof(G_macAddr));
+
+	/* the mode string can be max. [NR_ETH_CORES_MAX * "100FD," minus last comma */
+	if ( arglen > ( (NR_ETH_CORES_MAX * (PHY_MODE_NAME_LEN+1))-1))
+		arglen = ( NR_ETH_CORES_MAX * (PHY_MODE_NAME_LEN+1) )-1;
+
+	for ( i=0; i < arglen; i++) {
+		if (pChar[i] != ',') {
+			G_phyMode[j][k] = pChar[i];
+			/* maximum length per single mode reached ? */
+			if (k < (PHY_MODE_NAME_LEN-1))
+				k++;
+			else
+				G_phyMode[j][k] = '\0';
+		} else {
+			j++;
+			k=0;
+		}
+	}
+
+	return j;
+}
+
+
+
+
 
 
 /******************************************************************************
@@ -1457,22 +1244,19 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
  * \return			-
  */
 static void z77_ethtool_get_drvinfo(struct net_device *dev,
-								struct ethtool_drvinfo *info)
+									struct ethtool_drvinfo *info)
 {
 	struct z77_private  *np = netdev_priv(dev);
-#ifdef CONFIG_PCI
 	struct pci_dev		*pcd = np->pdev;
-#endif
 	unsigned long flags;
 
 	spin_lock_irqsave(&np->lock, flags);
 
 	strncpy(info->driver, cardname, sizeof(info->driver)-1);
 	strncpy(info->version, version, sizeof(info->version)-1);
-#ifdef CONFIG_PCI
+
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
-#endif
 
 	/* ts: added Register Dumps */
 	if (np->msg_enable)
@@ -1536,21 +1320,11 @@ static int z77_ethtool_get_settings(struct net_device *dev,
 	unsigned long flags;
 
 	if( !(np->flags & IFF_UP) ) {
-	     return -ENETDOWN;
+		return -ENETDOWN;
 	}
 
 	spin_lock_irqsave(&np->lock, flags);
 	mii_ethtool_gset(&np->mii_if, ecmd);
-
-#ifdef NO_PHY
-	/* get duplex setting from z087 register */
-	if (Z77READ_D32(Z077_BASE, Z077_REG_MODER)&(OETH_MODER_FULLD)) {
-		ecmd->duplex = DUPLEX_FULL;
-	} else {
-		ecmd->duplex = DUPLEX_HALF;
-	}
-	Z77DBG( ETHT_MESSAGE_LVL1,"%s: could only get duplex mode\n", __FUNCTION__);
-#endif
 
 	if (np->msg_enable == ETHT_MESSAGE_LVL3)
 		z77_dump_ecmd(ecmd);
@@ -1568,12 +1342,11 @@ static int z77_ethtool_get_settings(struct net_device *dev,
  *
  * \return			0 or negative error number;
  */
-static int z77_ethtool_set_settings(struct net_device *dev,
-									struct ethtool_cmd *ecmd)
+static int z77_ethtool_set_settings(struct net_device *dev, struct ethtool_cmd *ecmd)
 {
-#ifndef NO_PHY
+
 	struct ethtool_cmd ncmd;
-#endif
+
 	struct z77_private *np = netdev_priv(dev);
 	int res=0;
 	unsigned long flags;
@@ -1591,7 +1364,7 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 		res = mii_ethtool_sset(&np->mii_if, ecmd);
 		/* wait to let settings take effect */
 
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,30)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
 		/* set_current_state(TASK_INTERRUPTIBLE); */
 		schedule_timeout_interruptible(CONFIG_HZ/4);
 #else
@@ -1599,7 +1372,7 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 		schedule_timeout(CONFIG_HZ/4);
 #endif
 
-#ifndef NO_PHY
+
 		/* check PHY again, set MODER[10] to match duplexity setting in it */
 		mii_ethtool_gset(&np->mii_if, &ncmd);
 
@@ -1609,19 +1382,8 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 		} else {
 			Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
 		}
-#else
-		/* set duplexity as given from ethtool! */
-		if (ecmd->duplex == DUPLEX_FULL)
-			Z077_SET_MODE_FLAG(OETH_MODER_FULLD);
-		else
-			Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
-#endif
-
-	} else {
-		printk (KERN_INFO "activating compliance pattern test\n");
-		/* start compliance pattern mode */
-
 	}
+
 	spin_unlock_irqrestore (&np->lock, flags);
 
 	/* force link-up */
@@ -1691,7 +1453,7 @@ static void z77_ethtool_set_msglevel(struct net_device *dev, u32 v)
 }
 
 /******************************************************************************
- ** z77_ethtool_testmode - Set PHY test mode 
+ ** z77_ethtool_testmode - Set PHY test mode
  *
  * \param dev	\IN net_device struct for this NIC
  * \param etest	\IN test function(s), unused
@@ -1718,37 +1480,31 @@ static struct ethtool_ops z77_ethtool_ops = {
 	.get_settings 	= z77_ethtool_get_settings,
 	.set_settings 	= z77_ethtool_set_settings,
 	.nway_reset 	= z77_ethtool_nway_reset,
-	.get_link 	= z77_ethtool_get_link,
+	.get_link 		= z77_ethtool_get_link,
 	.get_msglevel 	= z77_ethtool_get_msglevel,
 	.set_msglevel 	= z77_ethtool_set_msglevel,
-	.self_test	= z77_ethtool_testmode,
+	.self_test		= z77_ethtool_testmode,
 };
 
 
 /* return non zero if the Tx BD is full already, a stall condition
- occured */
+   occured */
 u32 tx_full(struct net_device *dev)
 {
 	int txbEmpty;
 	struct z77_private *np = netdev_priv(dev);
 
-	if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-		txbEmpty = Z077_GET_TBD_FLAG(np->nCurrTbd, OETH_TX_BD_READY);
-	} else {
-		/* Z87 Core with extra TXBd empty Flags */
-		if ( np->nCurrTbd < 32 )
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0)
-					   & (1 << np->nCurrTbd);
-		else
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1)
-					   & (1 << (np->nCurrTbd-32));
-	}
+	/* Z87 Core with extra TXBd empty Flags */
+	if ( np->nCurrTbd < 32 )
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1 << np->nCurrTbd);
+	else
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) & (1 << (np->nCurrTbd-32));
 
 	return !txbEmpty;
 }
 
 
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21) )
+
 /* ts@men: we need the true linkstate for F218R01-01 */
 static ssize_t z77_show_linkstate(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -1762,77 +1518,13 @@ static ssize_t z77_show_linkstate(struct device *dev, struct device_attribute *a
 	return sprintf(buf, "%c\n", bsmr & MII_BMSR_LINK_VALID ? '1' : '0' );
 }
 
-static ssize_t z77_set_linkstate(struct device *dev, struct device_attribute *attr,
-								 const char *buf, size_t count)
+static ssize_t z77_set_linkstate(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	/* is a noop */
 	return 0;
 }
 
 static DEVICE_ATTR(linkstate, 0644, z77_show_linkstate, z77_set_linkstate );
-#endif
-
-
-/******************************************************************************
- ** setup BD ring in non DMA mode for P511
- *
- * \param dev		\IN net_device struct for this NIC
- *
- * \return			1 if link us up or 0
- */
-static int z77_bd_setup_nondma(struct net_device *dev)
-{
-  unsigned long i=0;
-	struct z77_private  *np = netdev_priv(dev);
-
-	/* careful, wipe out at Z077_BDBASE now , not Z077_BASE! */
-	memset((unsigned char*)(Z077_BDBASE + Z077_BD_OFFS), 0x00, 0x400 );
-
-	/* Setup Tx BDs */
-	for (i = 0; i < Z077_TBD_NUM; i++ ) {
-
-		/* BdAddr = CPU centric BD address view (ioremapped BAR1) */
-	np->txBd[i].BdAddr = (unsigned long)((np->ddr_virt+(Z77_ETHBUF_SIZE*i)) + (np->instance * PCIDDR_OFFS ));
-
-		/* hdlDma = IP core centric address view (BAR1 start = 0x00000000) */
-	np->txBd[i].hdlDma = (unsigned long)(((Z77_ETHBUF_SIZE * i) | (1<<31))+( np->instance*PCIDDR_OFFS )  );
-
-	Z077_SET_TBD_ADDR(i, np->txBd[i].hdlDma );
-		
-	/* cleanout the memory */
-	memset((unsigned long *)(np->txBd[i].BdAddr), 0x00, Z77_ETHBUF_SIZE);
-	/* let an IRQ be generated whenever packet is ready */
-	Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
-	}
-
-	/* Setup Receive BDs */
-	for ( i = 0; i < Z077_RBD_NUM; i++ ) {
-
-		/* BdAddr = CPU centric BD address view (ioremapped BAR1) */
-    np->rxBd[i].BdAddr = (unsigned long)((np->ddr_virt + (Z77_ETHBUF_SIZE * (Z077_TBD_NUM+i))) + (np->instance * PCIDDR_OFFS ) );
-
-		/* hdlDma = IC cores centric address view (BAR1 start = 0x00000000) */
-    np->rxBd[i].hdlDma = (((Z77_ETHBUF_SIZE * (Z077_TBD_NUM+i)) | 1<<31) +
-				  (np->instance * PCIDDR_OFFS));
-
-		/* cleanout this memory */
-		memset( (char*)(np->rxBd[i].BdAddr), 0, Z77_ETHBUF_SIZE);
-
-		/* ETH core wants physical Addresses */
-		Z077_SET_RBD_ADDR( i, np->rxBd[i].hdlDma );
-		Z077_SET_RBD_FLAG( i, Z077_RBD_IRQ | Z077_RBD_EMP );
-
-	}
-
-	/* close the Rx/Tx Rings with Wrap bit in each last BD */
-	Z077_SET_TBD_FLAG( Z077_TBD_NUM - 1 , Z077_TBD_WRAP );
-	Z077_SET_RBD_FLAG( Z077_RBD_NUM - 1 , Z077_RBD_WRAP );
-
-	return(0);
-}
-
-
-
 
 /****************************************************************************/
 /** z77_bd_setup - perform initialization of buffer descriptors
@@ -1848,10 +1540,9 @@ static int z77_bd_setup(struct net_device *dev)
 
 	u32 i=0;
 	struct z77_private *np = netdev_priv(dev);
-#ifdef CONFIG_PCI
 	dma_addr_t 	memPhysDma;
 	struct pci_dev		*pcd = np->pdev;
-#endif
+
 	dma_addr_t dma_handle = 0;
 	void *     memVirtDma = NULL;
 
@@ -1860,13 +1551,8 @@ static int z77_bd_setup(struct net_device *dev)
 
 	/* Setup Tx BDs */
 	for ( i = 0; i < Z077_TBD_NUM; i++ ) {
-#ifdef CONFIG_PCI
 		memVirtDma = pci_alloc_consistent(pcd, Z77_ETHBUF_SIZE, &memPhysDma);
-#else
-		memVirtDma = kmalloc(Z77_ETHBUF_SIZE, GFP_KERNEL);
-		dma_handle = (dma_addr_t)memVirtDma;
-#endif
-    np->txBd[i].BdAddr = (unsigned long)memVirtDma;
+		np->txBd[i].BdAddr = memVirtDma;
 
 		/* cleanout the memory */
 		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
@@ -1877,16 +1563,12 @@ static int z77_bd_setup(struct net_device *dev)
 	/* Setup Receive BDs */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
 
-#ifdef CONFIG_PCI
+
 		memVirtDma = pci_alloc_consistent( pcd, Z77_ETHBUF_SIZE, &memPhysDma);
 		dma_handle = pci_map_single( pcd, memVirtDma, (size_t)Z77_ETHBUF_SIZE, PCI_DMA_FROMDEVICE);
-#else
-		memVirtDma = kmalloc(Z77_ETHBUF_SIZE, GFP_KERNEL);
-        dma_handle = (dma_addr_t)memVirtDma;
-#endif
 
 		/* leave some headroom for skb->head  */
-    np->rxBd[i].BdAddr = (unsigned long)memVirtDma;
+		np->rxBd[i].BdAddr = memVirtDma;
 		np->rxBd[i].hdlDma = dma_handle;
 
 		/* cleanout the memory */
@@ -1904,30 +1586,9 @@ static int z77_bd_setup(struct net_device *dev)
 	return(0);
 }
 
-
-
-
-/****************************************************************************/
-/** z77_setup - perform initialization of buffer descriptors
- *
- * \param dev		\IN net_device struct for this NIC
- *
- * \brief this acts as wrapper that calls the adequate setup function
- *        depending on normal DMA use (ethernet frames sent to CPU memory
- *        by DMA from IP core) or non DMA use (currently only P511)
- *
- */
-static int z77_setup(struct net_device *dev)
-{
-	if (nodma)
-		return z77_bd_setup_nondma(dev);
-	else
-		return z77_bd_setup(dev);
-}
-
 #if defined(Z77_USE_VLAN_TAGGING)
 
-#if LINUX_VERSION_CODE < VERSION_CODE(3,0,0) 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 /****************************************************************************/
 /** z77_vlan_rx_register - register a VLAN group ID
  *
@@ -1941,10 +1602,8 @@ static void z77_vlan_rx_register(struct net_device *dev, struct vlan_group *grp)
 	unsigned long flags;
 
 	spin_lock_irqsave(&np->lock, flags);
-
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s\n", __FUNCTION__);
 	np->vlgrp = grp;
-
 	spin_unlock_irqrestore (&np->lock, flags);
 
 	return;
@@ -1969,15 +1628,15 @@ static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, uns
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s\n", __FUNCTION__);
 
 	if (!np->vlgrp) {
-	  Z77DBG(ETHT_MESSAGE_LVL1, "%s: vlgrp = NULL!\n", __FUNCTION__);
+		Z77DBG(ETHT_MESSAGE_LVL1, "%s: vlgrp = NULL!\n", __FUNCTION__);
 	} else {
-    Z77DBG(ETHT_MESSAGE_LVL1, "%s: adding VLAN:%d\n", __FUNCTION__, vid );
+		Z77DBG(ETHT_MESSAGE_LVL1, "%s: adding VLAN:%d\n", __FUNCTION__, vid );
 	}
 	spin_unlock_irqrestore (&np->lock, flags);
-  return 0;
+	return 0;
 }
 
-# if LINUX_VERSION_CODE < VERSION_CODE(3,0,0) 
+# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
 /****************************************************************************/
 /** z77_vlan_rx_kill_vid - delete a VLAN group ID
  *
@@ -1987,21 +1646,19 @@ static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, uns
  */
 static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid)
 {
-/* -		dev = vlan_group_get_device(grp, vid); */
-/* +		dev = __vlan_find_dev_deep(netdev, vid); */
+
 	struct z77_private *np = netdev_priv(dev);
 	unsigned long flags;
-
 
 	spin_lock_irqsave(&np->lock, flags);
 
 	if (!np->vlgrp) {
-	  Z77DBG(ETHT_MESSAGE_LVL1, "%s: vlgrp = NULL!\n", __FUNCTION__);
+		Z77DBG(ETHT_MESSAGE_LVL1, "%s: vlgrp = NULL!\n", __FUNCTION__);
 	} else {
-	  Z77DBG(ETHT_MESSAGE_LVL1, "%s: killing VLAN:%d (vlgrp entry:%p)\n",
-		 __FUNCTION__, vid, vlan_group_get_device(np->vlgrp, vid));
+		Z77DBG(ETHT_MESSAGE_LVL1, "%s: killing VLAN:%d (vlgrp entry:%p)\n",
+			   __FUNCTION__, vid, vlan_group_get_device(np->vlgrp, vid));
 
-	  vlan_group_set_device(np->vlgrp, vid, NULL);
+		vlan_group_set_device(np->vlgrp, vid, NULL);
 
 	}
 	spin_unlock_irqrestore (&np->lock, flags);
@@ -2151,7 +1808,6 @@ static void z77_reset( struct net_device *dev )
 
 }
 
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
 /****************************************************************************/
 /** z77_phy_init - initialize and configure the PHY devices
  *
@@ -2182,7 +1838,7 @@ static int z77_phy_init(struct net_device *dev)
 	if ((dat == PHY_ID2_KSZ8041_1) || (dat == PHY_ID2_KSZ8041_2) ) {
 		printk( KERN_INFO "found PHY KSZ8041. reverting Link/Act LED" );
 		dat = z77_mdio_read(dev, np->mii_if.phy_id , 0x1e );
-		dat |=0x4000; /* just set bit14, bit 15 is reserved (datasheet p.29) */
+		dat |= 1 << 14; /* just set bit14, bit 15 is reserved (datasheet p.29) */
 		z77_mdio_write( dev, phyAddr, 0x1e, dat );
 	}
 
@@ -2204,8 +1860,6 @@ static int z77_phy_init(struct net_device *dev)
 	printk( KERN_ERR "*** z77_phy_init check cable connection \n");
     return (-ENODEV);
 }
-
-
 
 /****************************************************************************/
 /** z77_phy_identify - probe the PHY device
@@ -2238,19 +1892,18 @@ static int z77_phy_identify(struct net_device *dev,u8 phyAddr )
 	return (-ENODEV);
 }
 
-
 /****************************************************************************/
 /** z77_phy_reset
- *
- * \param dev		\IN net_device struct for this NIC
- * \param phyAddr	\IN Address of used PHY, currently 1
- *
- * \brief
- * This routine send a Reset command to the PHY specified in
- * the parameter phyaddr.
- *
- * \return 0 always
- */
+*
+* \param dev		\IN net_device struct for this NIC
+* \param phyAddr	\IN Address of used PHY, currently 1
+*
+* \brief
+* This routine send a Reset command to the PHY specified in
+* the parameter phyaddr.
+*
+* \return 0 always
+*/
 static int z77_phy_reset( struct net_device *dev, u8 phyAddr )
 {
 	u16 dat = 0;
@@ -2263,8 +1916,6 @@ static int z77_phy_reset( struct net_device *dev, u8 phyAddr )
 
 	return(0);
 }
-
-
 
 /****************************************************************************/
 /** z77_init_phymode - Set Phy Mode and Flags according to given mode
@@ -2294,10 +1945,6 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 
 	strncpy(holder, G_phyMode[np->instCount], PHY_MODE_NAME_LEN);
 
-	if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-		printk( KERN_INFO "Z077 fix: forcing 10HD due to bandwith limits\n");
-		strncpy(holder, "10HD", 7);
-	}
 	/* be paranoid.. */
 	holder[PHY_MODE_NAME_LEN]=0;
 	printk( KERN_INFO "MEN ETH instance %s: using phy mode '%s'\n", dev->name, holder);
@@ -2384,8 +2031,6 @@ static int z77_do_autonegotiation(struct net_device *dev)
 
 	return rv;
 }
-#endif
-
 
 /****************************************************************************/
 /** remove the NIC from Kernel
@@ -2400,73 +2045,10 @@ static void cleanup_card(struct net_device *dev)
 	release_region(dev->base_addr, Z77_CFGREG_SIZE);
 }
 
-
-/****************************************************************************/
-/** Check for a network adapter of this type, and return '0' if one exists.
- *
- * \param dev			\IN net_device struct for this NIC
- *
- * \return 0 or error code
- */
-static int __init probe_z77(struct net_device *dev)
-{
-	struct z77_private *np;
-	np 	= netdev_priv(dev);
-	spin_lock_init(&np->lock);
-
-#if LINUX_VERSION_CODE <= VERSION_CODE(2,6,23)
-	SET_MODULE_OWNER(dev);
-#endif
-
-	printk(KERN_INFO "%s: %s found at 0x%08lx\n",
-		   dev->name, cardname, dev->base_addr);
-
-	/* no longer existing in 2.6.30 and up: */
-#if LINUX_VERSION_CODE  < VERSION_CODE(2,6,30)
-	dev->open				= z77_open;
-	dev->stop				= z77_close;
-	dev->hard_start_xmit	= z77_send_packet;
-	dev->get_stats			= z77_get_stats;
-	dev->tx_timeout			= z77_tx_timeout;
-	dev->do_ioctl			= z77_ioctl;
-	dev->get_stats			= z77_get_stats;
-	dev->set_multicast_list	= z77_set_rx_mode;
-#else
-	dev->netdev_ops 		= &z77_netdev_ops;
-#endif
-    dev->watchdog_timeo		= MY_TX_TIMEOUT;
-
-#if LINUX_VERSION_CODE <= VERSION_CODE(2,6,23)
-	dev->poll				= z77_poll;
-	dev->weight 			= Z077_WEIGHT;
-#endif
-
-	/* use PHY address from passed module parameter */
-	/* np->mii_if.phy_id 		= phyadr[t]; */
-	np->mii_if.phy_id_mask 	= 0x1f;
-	np->mii_if.reg_num_mask = 0x1f;
-	np->mii_if.dev 			= dev;
-	np->mii_if.mdio_read 	= z77_mdio_read;
-	np->mii_if.mdio_write 	= z77_mdio_write;
-
-	/* YES, we support the standard ethtool utility */
-#if LINUX_VERSION_CODE < VERSION_CODE(3,16,0)
-	SET_ETHTOOL_OPS(dev,    &z77_ethtool_ops);                                                                                  
-#else
-	dev->ethtool_ops = &z77_ethtool_ops;
-#endif
-	/* Data setup done, now setup Connection */
-	if (chipset_init(dev, 0)) {
-		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
-		return(-ENODEV);
-	} else
-		return(0);
-}
-
 /****************************************************************************/
 /** Timeout handler when no scheduled ETH irq arrived
  *
- * \param work		\IN handle of work_struct 
+ * \param work		\IN handle of work_struct
  *
  * \return -
  *
@@ -2478,7 +2060,7 @@ static void z77_reset_task(struct work_struct *work)
 	struct ethtool_cmd ecmd = {0};
 	int settings_saved=0;
 
-	
+
 	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
 	netif_tx_disable(dev);
@@ -2508,12 +2090,6 @@ static void z77_reset_task(struct work_struct *work)
 	/* If we have space available to accept new transmits, do so */
 	if (!tx_full(dev))
 		netif_wake_queue(dev);
-
-#ifdef DO_NETDEV_TIMEOUT_TEST
-	/* we get here when a TX timeout occured */
-	netif_wake_queue(dev);
-	Z077_ENABLE_IRQ( OETH_INT_TXB );
-#endif
 
 }
 
@@ -2589,11 +2165,9 @@ static int z77_process_rx( struct net_device *dev, int weight )
 	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
 	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
 
-	if(!rx0 && !rx1){
-		/* all empty, should never happen.. if yes just return */
-		/* WARN_ONCE(1, "%s: RX BDs are all empty!\n", __func__); */
+	if(!rx0 && !rx1)
 		return 0;
-	}
+
 
 	/* 1.) find oldest nonempty Rx BD in BDs */
 	if(!~rx0 && !~rx1){
@@ -2651,7 +2225,7 @@ static int z77_process_rx( struct net_device *dev, int weight )
 }
 
 
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
+
 /****************************************************************************/
 /** z77_poll - Rx poll function to support the NAPI functionality
  *
@@ -2676,11 +2250,8 @@ static int z77_poll(struct napi_struct *napi, int budget)
 
 	if ( npackets < budget ) { /* we are done, for NOW */
 
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,28) 
 		napi_complete(napi);
-#else
-		netif_rx_complete(dev, napi);
-#endif
+
 		/* acknowledge last Rx IRQ and expect new interrupts */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
 		if (np->gotBusy) {
@@ -2692,47 +2263,6 @@ static int z77_poll(struct napi_struct *napi, int budget)
 	}
 	return npackets;
 }
-
-#else
-
-static int z77_poll(struct net_device *dev, int *budget)
-{
-	int npackets = 0, quota = min(dev->quota, *budget);
-	unsigned int rx0, rx1;
-	struct z77_private *np = netdev_priv(dev);
-
-	Z77DBG( ETHT_MESSAGE_LVL3, "--> z77_poll:\n");
-	/* check the nonempty RX BDs to be passed to Network Stack */
-	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
-	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
-
-	npackets = z77_process_rx( dev, quota );
-
-	/*If we processed all packets,were done; tell kernel and reenable ints */
-	*budget-=npackets;
-	dev->quota -=npackets;
-
-	/* work left or new packet arrived meanwhile ? */
-	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
-	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
-	if ( !rx0 && !rx1 ) { /* we are done, for NOW */
-		netif_rx_complete(dev);
-		Z77DBG( ETHT_MESSAGE_LVL3,"<-- z77_poll:\n");
-
-		/* acknowledge last Rx IRQ and expect new interrupts */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
-		if (np->gotBusy) {
-			Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_BUSY );
-			Z077_DISABLE_IRQ( OETH_INT_BUSY );
-			np->gotBusy=0;
-		}
-		Z077_ENABLE_IRQ(OETH_INT_RXF);
-		return 0;
-	}
-	return 1;
-}
-#endif
-
 
 /****************************************************************************/
 /** z77_open - open the ethernet device for first usage
@@ -2761,42 +2291,29 @@ static int z77_open(struct net_device *dev)
 		return(-ENODEV);
 	}
 	/* setup the Tx/Rx buffer descriptors */
-	z77_setup(dev);
+	z77_bd_setup(dev);
 
 	/* clear any pending spurious IRQs */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
 
 	/* hook in the Interrupt handler */
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,18)
-	if (request_irq(dev->irq, z77_irq, IRQF_SHARED, cardname, dev)) {
-#else
-	if (request_irq(dev->irq, z77_irq, SA_SHIRQ, cardname, dev)) {
-#endif
+	if (request_irq(dev->irq, z77_irq, IRQF_SHARED, cardname, dev))
+	{
+
 		printk(KERN_ERR "*** %s: unable to get IRQ %d.\n", dev->name, dev->irq);
 		return -ENOMEM;
 	}
 
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
 	napi_enable(&np->napi);
-#endif
 
-	/*	enable IRQs we currently use: Rx[-ERR], Tx[-ERR], Busy */
 	Z077_ENABLE_IRQ( Z077_IRQ_ALL );
-
-	/* enable receiving and transmitting */
 	Z077_SET_MODE_FLAG(OETH_MODER_RXEN | OETH_MODER_TXEN );
 
 	np->open_time = jiffies;
 
-#if !defined(MEN_Z77_USE_OWN_PHYACCESS)
-	phy_start_aneg(np->phy_dev);
-	/* initial link check */
-	phy_start(np->phy_dev);
-#else
 	/* (re-)kick off link change detection */
 	np->timer.expires = jiffies + np->timer_offset;
 	add_timer(&np->timer);
-#endif
 
 	/* and let the games begin... */
 	netif_start_queue(dev);
@@ -2805,8 +2322,6 @@ static int z77_open(struct net_device *dev)
 	Z77DBG( ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__ );
 	return 0;
 }
-
-
 
 /*******************************************************************/
 /** send a ready made ethernet frame
@@ -2848,7 +2363,7 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	struct z77_private *np 	= 	netdev_priv(dev);
 	unsigned char 	*buf 	= 	skb->data;
 	u32 txbEmpty 			= 	0;
-#if defined(Z77_USE_VLAN_TAGGING) 
+#if defined(Z77_USE_VLAN_TAGGING)
 	unsigned int vlan_id	= 	0;
 	unsigned int vlan_tag	=   0;
 #endif
@@ -2856,88 +2371,57 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	int i 					= 	0;
 	unsigned char 	idxTx 	=   0;
 	dma_addr_t dma_handle 	= 	0;
-#ifndef NIOS_II
 	u8* dst = NULL;
 	u8* src = NULL;
-#endif
 
-    /* place Tx request in the recent Tx BD */
+
+	/* place Tx request in the recent Tx BD */
 	idxTx 	= np->nCurrTbd;
-
-#ifdef DO_NETDEV_TIMEOUT_TEST
-	np->nCount++;
-	/* printk(KERN_CRIT "nCount = %d...\n", np->nCount); */
-	if ((np->nCount > 10) && (np->doNDOtest == 0)) {
-		printk(KERN_CRIT "*** DO_NETDEV_TIMEOUT_TEST\n");
-		np->doNDOtest = 1;
-		Z077_DISABLE_IRQ( OETH_INT_TXB );
-		netif_stop_queue(dev);
-	}	
-#endif
 
 	/* some statistics (ok they are old, but better collect them now than
 	   leave them totally) */
 	np->stats.collisions += Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_RETRY) >> 4;
 
 	/* Check if this Tx BD we use now is empty. If not -> drop . */
-	if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-		if (!Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_READY )) {
-			netif_stop_queue(dev);
-			np->stats.tx_dropped++;
-			/* free this skb */
-			dev_kfree_skb(skb);
+	/* Z87 Core with extra TXBd empty Flags */
+	if ( idxTx < 32 )
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1<<idxTx);
+	else
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) & (1 << (idxTx-32));
 
-# if LINUX_VERSION_CODE < VERSION_CODE(2,6,32)
-			return NETDEV_TX_BUSY;
+	if (!txbEmpty) { /* congestion? */
+		netif_stop_queue(dev);
+		np->stats.tx_dropped++;
+
+		/* free this skb */
+		dev_kfree_skb(skb);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
+		return NETDEV_TX_BUSY;
 #else
-			return 1;
+		return 1;
 #endif
-		}
-	} else { /* Z87 Core with extra TXBd empty Flags */
-		if ( idxTx < 32 )
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1<<idxTx);
-		else
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) &
-				(1 << (idxTx-32));
-
-		if (!txbEmpty) { /* congestion? */
-			netif_stop_queue(dev);
-			np->stats.tx_dropped++;
-			
-			/* free this skb */
-			dev_kfree_skb(skb);
-
-#if LINUX_VERSION_CODE < VERSION_CODE(2,6,32)
-			return NETDEV_TX_BUSY;
-#else
-			return 1;
-#endif
-		}
 	}
+
 
 	Z77DBG(ETHT_MESSAGE_LVL2, "z77_send_packet[%d] len 0x%04x DMAadr %08x\n",
 		   idxTx, skb->len, np->txBd[idxTx].hdlDma );
 
-#ifdef NIOS_II
-	memcpy((void*)(np->txBd[idxTx].BdAddr | NO_CACHED_MEM), (void*)buf, skb->len);
-	Z077_SET_TBD_ADDR( idxTx, np->txBd[idxTx].hdlDma /* phys.addr */ );
-#else
-    if (!nodma) {
-		dma_handle = pci_map_single( np->pdev, (void*)(np->txBd[idxTx].BdAddr),
-									 Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE );
-		np->txBd[idxTx].hdlDma = dma_handle;
-		Z077_SET_TBD_ADDR( idxTx, dma_handle);
-	}
+
+	dma_handle = pci_map_single( np->pdev, (void*)(np->txBd[idxTx].BdAddr), Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE );
+	np->txBd[idxTx].hdlDma = dma_handle;
+	Z077_SET_TBD_ADDR( idxTx, dma_handle);
 
 	src 	= (u8*)buf;
 	dst 	= (u8*)np->txBd[idxTx].BdAddr;
 	frm_len = skb->len;
 
-# if defined(Z77_USE_VLAN_TAGGING) 
+# if defined(Z77_USE_VLAN_TAGGING)
 	/* VLAN or regular frame ? */
-	if ( vlan_tx_tag_present(skb)) {
 
-		vlan_id = vlan_tx_tag_get(skb);
+	if ( vlan_tag_present_func( skb )) {
+		vlan_id = vlan_tag_get_func( skb );
+
 		vlan_tag = htonl((ETH_P_8021Q << 16) | vlan_id);
 
 		Z77DBG(ETHT_MESSAGE_LVL2, "VLAN frame: ID 0x%04x\n", vlan_id);
@@ -2965,7 +2449,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 
 	/* sync the mem ranges */
 	pci_dma_sync_single_for_cpu( np->pdev, dma_handle, Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE);
-#endif
 
 	/* very verbose debugging on? then dump frame */
 	if ( np->msg_enable >= ETHT_MESSAGE_LVL3 ) {
@@ -2982,18 +2465,12 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	 * finally kick off transmission
 	 */
 
-	if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-		/* Open Core: Set TX bit within TxBD  */
-		Z077_SET_TBD_FLAG( idxTx, OETH_TX_BD_READY );
-	} else {
-		/* MEN cores maintain separate TX Empty Registers */
-		if (idxTx < 32)
-			Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY0, 1 << idxTx );
-		else
-			Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY1, 1 << (idxTx - 32));
-	}
+	if (idxTx < 32)
+		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY0, 1 << idxTx );
+	else
+		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY1, 1 << (idxTx - 32));
 
-	dev->trans_start = jiffies;
+	/* dev->trans_start = jiffies; */
 	np->stats.tx_bytes += skb->len;
 
 	/* .. and free this skb */
@@ -3005,41 +2482,33 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 
 	/* Check if the next Tx BD is empty. If not -> stall . */
 	idxTx = np->nCurrTbd;
-	if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-		if (Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_READY )) {
-			netif_stop_queue(dev);
-			Z77DBG(ETHT_MESSAGE_LVL2, "%s: stopping queue\n", __FUNCTION__ );
-		}
-	} else { /* Z87 Core with extra TXBd empty Flags */
-		if ( idxTx < 32 )
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1<<idxTx);
-		else
-			txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) &
-				(1 << (idxTx-32));
+	/* Z87 Core with extra TXBd empty Flags */
+	if ( idxTx < 32 )
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1<<idxTx);
+	else
+		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) & (1 << (idxTx-32));
 
-		if (!txbEmpty) { /* congestion? */
-			netif_stop_queue(dev);
-			Z77DBG(ETHT_MESSAGE_LVL2, "%s: stop_queue\n", __FUNCTION__ );
-		}
+	if (!txbEmpty) { /* congestion? */
+		netif_stop_queue(dev);
+		Z77DBG(ETHT_MESSAGE_LVL2, "%s: stop_queue\n", __FUNCTION__ );
 	}
 
-# if LINUX_VERSION_CODE < VERSION_CODE(2,6,32)
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 	return NETDEV_TX_OK;
 #else
 	return 0;
 #endif
 }
 
-#ifdef MEN_MM1
-
 /*******************************************************************/
 /** perform a SMBus cycle on EEprom
- *
- * \param dev	\IN net_device struct for this NIC
- * \param c	    \IN command char to describe which cycle to perform
- *
- * \return 0 or 1 when cycle='G' or 0xffff
- */
+*
+* \param dev	\IN net_device struct for this NIC
+* \param c	    \IN command char to describe which cycle to perform
+*
+* \return 0 or 1 when cycle='G' or 0xffff
+*/
 static unsigned int smb_cycle(struct net_device *dev, unsigned char c)
 {
 	int i;
@@ -3090,11 +2559,8 @@ static unsigned int smb_cycle(struct net_device *dev, unsigned char c)
 	return (c == 'G') ? val : 0xffff;
 }
 
-
-
-
 /*******************************************************************/
-/** Read a byte from EEPROM
+/** Read a byte from MAC EEPROM directly attached to this Z87
  *
  * \param dev		\IN net_device struct for this NIC
  * \param offset	\IN position of byte to read
@@ -3110,7 +2576,7 @@ static unsigned int smb_cycle(struct net_device *dev, unsigned char c)
  *  Attention: this assumes that exactly one byte is read (8x'G' in a row)!
  */
 static unsigned char z77_read_byte_data(struct net_device *dev,
-										unsigned int offset )
+					unsigned int offset )
 {
 	unsigned int i=0, j=7;
 	unsigned char byte=0;
@@ -3128,60 +2594,69 @@ static unsigned char z77_read_byte_data(struct net_device *dev,
 	return byte;
 }
 
-
 /*******************************************************************/
-/** Write a byte to EEPROM
+/** finding a board ident EEPROM to read MAC from
  *
- * \param dev		\IN net_device struct for this NIC
- * \param offset	\IN position of byte to read
- * \param value 	\IN vlaue to write
+ * \param mac		\IN pointer to 6 byte for retrieved MAC storage
  *
- * \return byte value at this offset in EEPROM
+ * \return 1 if MAC retrieved or 0 if none found
+ * \brief
  *
  */
-static void z77_write_byte_data(struct net_device *dev,
-								unsigned int offset, unsigned char value )
+static int z77_get_mac_from_board_id(u8 *mac)
 {
-	unsigned int i=0;
-	unsigned char sequence[]="S1010000WA00000000A00000000AOP\0";
+	char brdname[6];
+	int i,j, board=0;
+	struct i2c_adapter *adap = NULL;
+	struct i2c_board_info i2cinfo;
+	struct i2c_client  *client = NULL;
+	memset(&i2cinfo, 0, sizeof(struct i2c_board_info));
+	i2cinfo.addr  = MEN_BRDID_EE_ADR;
+	i2cinfo.flags = I2C_CLASS_HWMON;
+	strncpy(i2cinfo.type, "EEP", 3);
 
-	/* insert offsets in 1st half of smb access (write-offset-phase) above*/
-	for (i=0; i < 8; i++)
-		sequence[10+i] = (offset & (0x80>>i)) ? '1' : '0';
-	/* insert value in 2nd half of smb access (write-value-phase) above */
-	for (i=0; i < 8; i++)
-		sequence[19+i] = (value & (0x80>>i)) ? '1' : '0';
-	i=0;
-	while(sequence[i]) {
-		smb_cycle(dev, sequence[i++]);
+	for ( i=0; i < I2C_MAX_ADAP_CNT; i++ )
+	{
+		adap = i2c_get_adapter(i);
+		if (adap != NULL) {
+			memset( brdname, 0x0, sizeof(brdname));
+
+			if ((client = i2c_new_device( adap, &i2cinfo ))) {
+				for ( j = 0; j < ID_EE_NAME_LEN; j++ )
+					brdname[j] = i2c_smbus_read_byte_data(client, j + ID_EE_NAME_OFF );
+
+				if (brdname[0] == 'B') {
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 0 );
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 1 );
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 2 );
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 3 );
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 4 );
+					*mac++ = i2c_smbus_read_byte_data(client, MEN_BRDID_EE_MAC_OF + 5 );
+					board = 1;
+				}
+
+				if (board) {
+					i2c_unregister_device( client );
+					i2c_put_adapter( adap );
+					break;
+				}
+			i2c_unregister_device( client );
+		}
+			i2c_put_adapter( adap );
+		}
 	}
-}
 
-/*******************************************************************/
-/** reset the EEPROM
- *
- * \param dev		\IN net_device struct for this NIC
- *
- *
- */
-static void	z77_reset_eeprom(struct net_device *dev )
-{
-	unsigned int i;
-	for (i=0; i < 30; i++) {
-		z77_scl_out(Z077_BASE, 0 );
-		udelay(50);
-		z77_scl_out(Z077_BASE, 1 );
-		udelay(50);
-	}
+	if (board)
+		return 1;
+	else
+		return 0;
 }
-#endif
-
 
 /*******************************************************************/
 /** Initialize the IP core Registers
  *
  * \param dev			\IN net_device struct for this NIC
- * \param donegotiate	\IN nonzero if Autoneg. shall be performed
+ * \param first_init	\IN nonzero if Autoneg. shall be performed
  *
  * \brief
  *  setup the necessary Registers like MODER, BDNUM (used on Z77 only)
@@ -3190,250 +2665,86 @@ static void	z77_reset_eeprom(struct net_device *dev )
  * \return 0 or error code
  *
  */
-static int chipset_init(struct net_device *dev, u32 donegotiate)
+static int chipset_init(struct net_device *dev, u32 first_init)
 {
 	u32 moder = 0;
-	struct z77_private *np 	= netdev_priv(dev);
-#if defined(MEN_P51X) || defined(CONFIG_X86)
-	u32 mac_part = 0;
-#endif
-#if defined(CONFIG_MENEP05)
-	struct device_node *z77_node = NULL;
-	int* dev_index;
-	int* dev_phy_addr;
-	char* dev_mac_addr;
-#endif
+	struct z77_private *np = netdev_priv(dev);
+	u8 mac[6] = {0,0,0,0,0,0};
+	u32 mac0reg=0, mac1reg=0;
 
-	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(%d)\n", __FUNCTION__, donegotiate);
+	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(%d)\n", __FUNCTION__, first_init);
 
-	/* completely Reset MAC here, treat like powerup */
-	z77_reset(dev);
-
-	/* set MAC addr. if not done already */
-	if( donegotiate==0 || !is_valid_ether_addr(dev->dev_addr) ) {
-		/* -- set common MEN OUI part -- */
-		dev->dev_addr[0] = 0x00;
-		dev->dev_addr[1] = 0xc0;
-		dev->dev_addr[2] = 0x3a;
-#ifdef NIOS_II
-		{
-			u32 i = 0, val = 0;
-			char tmp[3] = {0,0,0};
-			unsigned char rawaddr[13]; /* MAC addr in ASCII: "00C03Axxyyzz" */
-			u32 serialnumber = 0;
-			if (SysParamGet("nmac0", rawaddr, 13)) {
-				printk("*** error reading SysParam nmac0. Use default MAC Addr!\n");
-				dev->dev_addr[3] = 0x41;
-				dev->dev_addr[4] = 0x00;
-				dev->dev_addr[5] = 0x00;
-
-			} else {
-				for (i = 0; i < 12; i+=2 ) {
-					tmp[0] = rawaddr[i];
-					tmp[1] = rawaddr[i+1];
-					sscanf( tmp, "%x", &val );
-					dev->dev_addr[i>>1] = val & 0xff;
-				}
-				SysParamGet("sernbr", rawaddr, 13);
-				sscanf(rawaddr, "%d", &serialnumber);
-				dev->dev_addr[4] = (serialnumber >> 8 ) & 0xFF;
-				dev->dev_addr[5] = serialnumber & 0xFF;
-			}
+	z77_reset( dev );
+	if( first_init==0 )
+	{	/* initial init call, check MAC */
+		/* 1. Check what's already in the MAC Registers */
+		mac0reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR0 );
+		mac1reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR1 );
+		mac[0] = ( mac1reg >> 8  ) & 0xff;
+		mac[1] = ( mac1reg >> 0  ) & 0xff;
+		mac[2] = ( mac0reg >> 24 ) & 0xff;
+		mac[3] = ( mac0reg >> 16 ) & 0xff;
+		mac[4] = ( mac0reg >> 8  ) & 0xff;
+		mac[5] = ( mac0reg >> 0  ) & 0xff;
+		printk(KERN_INFO "current MAC: %02x:%02x:%02x:%02x:%02x:%02x ", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+		if ( is_valid_ether_addr( mac )) {
+			printk(KERN_ERR " => ok, MAC valid. Keeping it.\n");
+			memcpy(dev->dev_addr, mac, 6);
+			goto cont_init;
 		}
-#elif defined CONFIG_MENEM1
-		{
-			u32 i = 0, val = 0;
-			char tmp[3] = {0,0,0};
-			unsigned char rawaddr[13]; /* MAC addr in ASCII: "00C03A4xyyzz" */
-			/* linux driver was used with EM01 first.. */
-			if (SysParamGet("nmac0", rawaddr, 13)) {
-				printk("*** error reading SysParam nmac0. Use default MAC\n");
-				dev->dev_addr[3] = 0x42;
-				dev->dev_addr[4] = 0x00;
-				dev->dev_addr[5] = 0x01 ;
-			} else {
-				for (i = 0; i < 12; i+=2 ) {
-					/* convert ASCII to bytes */
-					tmp[0] = rawaddr[i];
-					tmp[1] = rawaddr[i+1];
-					sscanf( tmp, "%x", &val );
-					dev->dev_addr[i>>1] = val & 0xff;
-				}
-				dev->dev_addr[3]++;	/* EM01 1st/2nd ETH = 0x40 / 0x41 */
-			}
+
+		/* 2. initial MAC wasn't valid, check for attached MAC EEPROM */
+		printk(KERN_INFO " => invalid or uninitialized MAC. Try reading MAC EEPROM.\n");
+		mac[0] = z77_read_byte_data( dev, 0x01 );
+		mac[1] = z77_read_byte_data( dev, 0x02 );
+		mac[2] = z77_read_byte_data( dev, 0x03 );
+		mac[3] = z77_read_byte_data( dev, 0x04 );
+		mac[4] = z77_read_byte_data( dev, 0x05 );
+		mac[5] = z77_read_byte_data( dev, 0x06 );
+
+		printk(KERN_INFO "got MAC: %02x:%02x:%02x:%02x:%02x:%02x ", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+
+		if ( is_valid_ether_addr(mac) ) {
+			printk(KERN_ERR " => ok, MAC valid, assigning it.\n");
+			memcpy(dev->dev_addr, mac, 6);
+			z77_store_mac( dev );
+			goto cont_init;
 		}
-#elif defined(CONFIG_MENEM9)
-		{
-			char buffer[20];
 
-			dev->dev_addr[3] = 0xa4;
-
-			if (SysParamGet("brd", buffer, sizeof(buffer)) == 0
-				&& strncmp(buffer, "EM09A", sizeof("EM09A")) == 0
-				&& np->instance < 2
-				&& SysParamGet("nmac0", buffer, sizeof(buffer)) == 0) {
-
-				dev->dev_addr[4] = (0x40 + 0x10 * np->instance)
-								   | str2hexnum(buffer[9]);
-				dev->dev_addr[5] = str2hexnum(buffer[10])<<4
-								   | str2hexnum(buffer[11]);
+		printk(KERN_INFO " => invalid or uninitialized MAC. Try reading Board ID EEPROM.\n");
+		/* 3. no MAC EEPROM found or content invalid, check for board Ident EEPROM */
+		if (z77_get_mac_from_board_id(mac))	{
+			printk(KERN_INFO "got MAC: %02x:%02x:%02x:%02x:%02x:%02x ", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+			if ( is_valid_ether_addr(mac) ) {
+				printk(KERN_ERR " => ok, MAC valid, assigning it.\n");
+				memcpy(dev->dev_addr, mac, 6);
+				z77_store_mac( dev );
+				goto cont_init;
 			}
-			else {
-				printk(KERN_ERR "%s: *** Can't determine MAC address. "
-					   "Use default MAC!\n", dev->name);
-				dev->dev_addr[4] = 0x00;
-				dev->dev_addr[5] = 0x01 + np->instance;
-			}
-		}
-#elif defined(CONFIG_MENEP05)
-		/* read phy addresses and mac addresses from fdt */
-		while ((z77_node = of_find_node_by_type(z77_node, "z77_eth"))) {
-			dev_index 	 = (int*) of_get_property( z77_node, MENEP05_Z77_INSTNAME, NULL );
-			dev_mac_addr = (char*)of_get_property( z77_node, MENEP05_Z77_MACADR, NULL );
-			dev_phy_addr = (int*) of_get_property( z77_node, MENEP05_Z77_PHYADR, NULL );
-			if (dev_index == NULL) {
-				printk(KERN_ERR "Error while parsing fdt for MEN_EP05: property %s not found in %s \n",
-						MENEP05_Z77_INSTNAME, z77_node->name);
-				continue;
-			}
-			/* is this our device? */
-			if ( *dev_index == np->instance) {
-	#ifndef NO_PHY
-				/* store phy address */
-				if ( dev_phy_addr ) {
-					phyadr[np->instCount] = *dev_phy_addr;
-					printk(KERN_INFO "PHY addr for %s: %d\n",
-						   z77_node->name, *dev_phy_addr);
-				} else {
-					printk(KERN_ERR "Error: could not find PHY address in %s. Use default %d.\n",
-							z77_node->name, phyadr[np->instCount]);
-				}
-	#endif
-				/* store mac address */
-				if ( dev_mac_addr ) {
-					/* fixup the relevant parts */
-					dev->dev_addr[3] = dev_mac_addr[3];
-					dev->dev_addr[4] = dev_mac_addr[4];
-					dev->dev_addr[5] = dev_mac_addr[5];
-				} else {
-					printk(KERN_ERR "Error: could not find MAC address in %s. Use default.\n",
-							z77_node->name);
-
-					dev->dev_addr[4] = 0x00;
-					dev->dev_addr[5] = 0x01 + np->instance;
-				}
-
-				break;
-			} /* instance is our device instance */
-		}
-#elif defined(MEN_MM1)  /* init SMB2 handle to read this instances EEPROM */
-		/* read out this instances MAC */
-		if (writemac)
-		{
-			/* clock the EEPROM like 30x to get it in default state (they have no Reset) */
-			z77_reset_eeprom(dev);
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			printk(KERN_ERR "programming  MAC EEPROM content:\n");
-			z77_write_byte_data(dev, 0x01, 0x00 );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			z77_write_byte_data(dev, 0x02, 0xc0 );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			z77_write_byte_data(dev, 0x03, 0x3a );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			z77_write_byte_data(dev, 0x04, 0xae );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			z77_write_byte_data(dev, 0x05, 0x20 );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
-
-			z77_write_byte_data(dev, 0x06, 0x00 );
-			current->state = TASK_INTERRUPTIBLE;
-			schedule_timeout(CONFIG_HZ/10); /* pause 100 ms */
+			printk(KERN_INFO " => invalid MAC. Assigning random MAC: ");
+			eth_hw_addr_random( dev );
+			printk(KERN_INFO " %02x:%02x:%02x:%02x:%02x:%02x ",	dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5] );
+			z77_store_mac( dev );
 		} else {
-			printk(KERN_ERR "dumping MAC EEPROM content\n");
-			dev->dev_addr[0] = z77_read_byte_data(dev, 0x01 );
-			dev->dev_addr[1] = z77_read_byte_data(dev, 0x02 );
-			dev->dev_addr[2] = z77_read_byte_data(dev, 0x03 );
-			dev->dev_addr[3] = z77_read_byte_data(dev, 0x04 );
-			dev->dev_addr[4] = z77_read_byte_data(dev, 0x05 );
-			dev->dev_addr[5] = z77_read_byte_data(dev, 0x06 );
-
-			printk(KERN_INFO "%s: use EEprom MAC %02x:%02x:%02x:%02x:%02x:%02x\n",
-				   dev->name, dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2],
-				   dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5]);
+			printk(KERN_INFO " => no Board ID EEPROM found, assigning random MAC: ");
+			eth_hw_addr_random( dev );
+			printk(KERN_INFO " %02x:%02x:%02x:%02x:%02x:%02x ",	dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5] );
+			z77_store_mac( dev );
 		}
-#else
-#  if defined(MEN_P51X) || (defined(CONFIG_X86) && !defined( MEN_MM1 ))
-		/* assign the MAC found in EEPROM, consider instance count */
-		switch (np->board) {
-		case MEN_P511:
-			mac_part = G_sernum + np->mac_offset + (np->instance * Z77_MAC_P511_IF2OFF);
-			break;
-		case MEN_P513:
-			mac_part = G_sernum + np->mac_offset + (np->instance * Z77_MAC_P513_IF2OFF);
-			break;
-		case MEN_F11S: /* F218  & F11S has just 1 Z87 instance onboard */			
-		case MEN_F218:
-			mac_part = G_sernum + np->mac_offset;
-			break;
-		default:
-			mac_part = 0;			
-		}
+	}
 
-		dev->dev_addr[3] = (mac_part & 0xFF0000) >> 16;
-		dev->dev_addr[4] = (mac_part & 0x00FF00) >> 8;
-		dev->dev_addr[5] = (mac_part & 0x0000FF);
-#  else
-		/* none of the above ? use generic MAC */
-		dev->dev_addr[3] = 0xff;
-		dev->dev_addr[4] = 0x00;
-		dev->dev_addr[5] = 0x01 + np->instance;
-#  endif
-#endif
-
-		/* set MAC Address in MAC_ADDR0, MAC_ADDR1 */
-		Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR0,
-					  dev->dev_addr[2] << 24 | dev->dev_addr[3] << 16 | \
-					  dev->dev_addr[4] << 8  | dev->dev_addr[5]);
-		Z77WRITE_D32( Z077_BASE, Z077_REG_MAC_ADDR1,
-					  dev->dev_addr[0] << 8 | dev->dev_addr[1] );
-
-	} /* end if (donegotiate == 0) ... */
+cont_init:
 
 	np->mii_if.phy_id = phyadr[np->instCount];
-
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
-# ifndef NO_PHY
-	if (donegotiate) {
+	if (first_init) {
 		if (z77_do_autonegotiation(dev)) {
 			printk(KERN_ERR "*** PHY mode setting / autonegotiate failed!\n");
 			return(-ENODEV);
 		}
 	}
-# endif
-#endif
 
 	moder = Z77READ_D32( Z077_BASE, Z077_REG_MODER );
-
-#ifdef NO_PHY
-    if( (moder & OETH_MODER_HD_AVAL) == 0 ) {
-        moder = OETH_MODER_FULLD;
-    }
-#endif
-
-	/* set MODER Register to meaningful values  */
-	moder |= OETH_MODER_IFG | OETH_MODER_EXDFREN | OETH_MODER_CRCEN |	\
-		OETH_MODER_BRO | OETH_MODER_PAD | OETH_MODER_RECSMALL;
+	moder |= OETH_MODER_IFG | OETH_MODER_EXDFREN | OETH_MODER_CRCEN | OETH_MODER_BRO | OETH_MODER_PAD | OETH_MODER_RECSMALL;
 
 	if ( ( (np->mii_if.full_duplex) || (strstr(mode, "FD"))) &&
 		 (moder & OETH_MODER_HD_AVAL) ) {
@@ -3441,11 +2752,7 @@ static int chipset_init(struct net_device *dev, u32 donegotiate)
 	}
 
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MODER, moder);
-
-	/* set the packet length Register (remain at default) */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_PACKLEN, Z77_PACKLEN_DEFAULT );
-
-	/* set BDNUM (const 64+64 at 16Z087) */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_TX_BDNUM, Z077_TBD_NUM );
 
 	/* set management indices */
@@ -3474,12 +2781,10 @@ void z77_tx(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
 
-#ifdef CONFIG_PCI
-	if (!nodma)
-		pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma,
-						 Z77_ETHBUF_SIZE,
-						 PCI_DMA_TODEVICE);
-#endif
+	pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma,
+					 Z77_ETHBUF_SIZE,
+					 PCI_DMA_TODEVICE);
+
 	np->txIrq++;
 	np->txIrq%= Z077_TBD_NUM;
 	np->stats.tx_packets++;
@@ -3491,8 +2796,6 @@ void z77_tx(struct net_device *dev)
 		netif_wake_queue(dev);
 
 }
-
-
 
 /*****************************************************************************/
 /** z77_pass_packet - packet passing function for one ETH frame
@@ -3509,28 +2812,19 @@ static int z77_pass_packet( struct net_device *dev, unsigned int idx )
 	struct sk_buff *skb = NULL;
 	u32 pkt_len = 0;
 	u32 i = 0;
-    char *buf = NULL;
+	char *buf = NULL;
 
 	pkt_len	= Z077_GET_RBD_LEN( idx ) - LEN_CRC;
-	pci_dma_sync_single_for_cpu( np->pdev,
-								 np->rxBd[idx].hdlDma,
-								 Z77_ETHBUF_SIZE, PCI_DMA_FROMDEVICE);
+	pci_dma_sync_single_for_cpu( np->pdev, np->rxBd[idx].hdlDma, Z77_ETHBUF_SIZE, PCI_DMA_FROMDEVICE);
 
 	skb = dev_alloc_skb( pkt_len + NET_IP_ALIGN );
-	Z77DBG(ETHT_MESSAGE_LVL3, "z77_pass_packet[%d]: pktlen=%04x\n",
-		   idx, pkt_len);
+	Z77DBG(ETHT_MESSAGE_LVL3, "z77_pass_packet[%d]: pktlen=%04x\n", idx, pkt_len);
 
 	if (skb) {
 		skb->dev = dev;
 		skb_reserve(skb, NET_IP_ALIGN); /* 16 byte align the IP fields. */
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
-		skb_copy_to_linear_data(skb,
-					(void*)(np->rxBd[idx].BdAddr | NO_CACHED_MEM),
-					pkt_len);
-#else
-        eth_copy_and_sum(skb, (void*)(np->rxBd[idx].BdAddr | NO_CACHED_MEM),
-						 pkt_len, 0);
-#endif
+		skb_copy_to_linear_data(skb, (void*)(np->rxBd[idx].BdAddr ), pkt_len);
+
 		/* very verbose debugging on? then dump frame */
 		if ( np->msg_enable >= ETHT_MESSAGE_LVL3 ) {
 			buf = (char*)(np->rxBd[idx].BdAddr);
@@ -3544,7 +2838,6 @@ static int z77_pass_packet( struct net_device *dev, unsigned int idx )
 		}
 
 		skb_put(skb, pkt_len);
-
 		skb->protocol = eth_type_trans (skb, dev);
 
 		/* tell network stack... */
@@ -3555,14 +2848,13 @@ static int z77_pass_packet( struct net_device *dev, unsigned int idx )
 		np->stats.rx_packets++;
 
 		/* clean processed Rx BD nonempty Flag */
-		if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-			Z077_SET_RBD_FLAG( idx, OETH_RX_BD_EMPTY | Z077_RBD_IRQ );
-		} else {
-			if ( idx < 32 )
-				Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY0, 1<< idx );
-			else
-				Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1, 1<< (idx-32));
+		if ( idx < 32 ) {
+			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY0, 1<< idx );
 		}
+		else {
+			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1, 1<< (idx-32));
+		}
+
 		return 0;
 	} else {
 		printk (KERN_WARNING "*** %s:Mem squeeze! drop packet\n",dev->name);
@@ -3597,24 +2889,9 @@ static int z77_close(struct net_device *dev)
 	/* stop receiving/transmitting */
 	Z077_CLR_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
 
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
 	/* shutdown link detect timer */
 	del_timer_sync(&np->timer);
-#endif
-
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
 	napi_disable(&np->napi);
-#endif
-
-#if !defined( CONFIG_PCI )
-	/* release resources of Rx/Tx BDs */
-	for (i = 0; i < Z077_TBD_NUM; i++ ) {
-        kfree((void*)(np->txBd[i].BdAddr));
-	}
-	for (i = 0; i < Z077_RBD_NUM; i++ ) {
-        kfree((void*)(np->rxBd[i].BdAddr));
-    }
-#endif
 
 	/* disable Rx here. */
 	free_irq(dev->irq, dev);
@@ -3624,47 +2901,15 @@ static int z77_close(struct net_device *dev)
 	return 0;
 }
 
-
-/*******************************************************************/
-/** drop Rx buffers in case of BUSY interrupt (context: IRQ)
- *  in case we get a BUSY interrupt, throw away all packets
- *  (if this IRQ occurs we have some serious network flooding or
- *  CPU performance problem)
- */
-void z77_drop_rxbuffers(struct net_device *dev)
-{
-	int i;
-	struct z77_private *np = netdev_priv(dev);
-
-	for ( i=0;i<Z077_RBD_NUM;i++ ) {
-		/* clean processed Rx BD nonempty Flag */
-		if ( np->modCode == CHAMELEON_16Z077_ETH ) {
-			Z077_SET_RBD_FLAG( i, OETH_RX_BD_EMPTY | Z077_RBD_IRQ );
-		} else {
-			if ( i < 32 )
-				Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY0, 1 << i );
-			else
-				Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1, 1 << (i-32));
-		}
-	}
-	printk(KERN_CRIT "MEN ETH BUSY IRQ, dropped Rx buffers\n");
-}
-
-
 /*******************************************************************/
 /** central IRQ handler
  *
  * \param irq		\IN INTB interrupt
  * \param dev_id	\IN unique identifier
- * \param regs		\IN ancient stuff for register pushing/popping
  *
  * \return if IRQ was handled or not
  */
-#if LINUX_VERSION_CODE >= VERSION_CODE(2,6,19)
 static irqreturn_t z77_irq(int irq, void *dev_id)
-#else
-static irqreturn_t z77_irq(int irq, void *dev_id, struct pt_regs * regs)
-#endif
 {
 	/* uses dev_id to store 'this' net_device */
 	struct net_device *dev = (struct net_device *)dev_id;
@@ -3672,25 +2917,19 @@ static irqreturn_t z77_irq(int irq, void *dev_id, struct pt_regs * regs)
 	int handled = 0;
 
 	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
-    if (!status)
-        goto out;	/* It wasnt me, ciao. */
+	if (!status)
+		goto out;	/* It wasnt me, ciao. */
 
 	if (status & OETH_INT_RXF) { /* Got a packet. */
 		Z077_DISABLE_IRQ( OETH_INT_RXF ); /* acknowledged/reenabled in NAPI poll routine */
-#if LINUX_VERSION_CODE >= VERSION_CODE(2,6,30)
 		napi_schedule(&np->napi);
-# elif  (LINUX_VERSION_CODE >= VERSION_CODE(2,6,23)) && (LINUX_VERSION_CODE <= VERSION_CODE(2,6,28)) 
-		netif_rx_schedule( dev, &np->napi );
-# else
-		netif_rx_schedule( dev );
-#endif
 	}
 
 	if (status & OETH_INT_TXB) { /* Transmit complete. */
 		z77_tx(dev);
 	}
 
-	if (status & OETH_INT_BUSY) { 	/* RX FIFO overrun ? */		
+	if (status & OETH_INT_BUSY) { 	/* RX FIFO overrun ? */
 		np->gotBusy=1; 	/* clear after next NAPI poll round is done */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status & ~OETH_INT_RXE );
 	}
@@ -3698,7 +2937,7 @@ static irqreturn_t z77_irq(int irq, void *dev_id, struct pt_regs * regs)
 	if (status & OETH_INT_TXE) {  	/* handle Tx Error */
 		z77_tx_err(dev);
 	}
-	
+
 	if (status & OETH_INT_RXE) {	/* handle Rx Error */
 		z77_rx_err(dev);
 	}
@@ -3707,7 +2946,7 @@ static irqreturn_t z77_irq(int irq, void *dev_id, struct pt_regs * regs)
 	Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status & ~OETH_INT_RXF );
 
 	handled = 1;
- out:
+out:
 	return IRQ_RETVAL(handled);
 }
 
@@ -3724,274 +2963,8 @@ static struct net_device_stats *z77_get_stats(struct net_device *dev)
 	return &np->stats;
 }
 
-#if !defined(MEN_Z77_USE_OWN_PHYACCESS)
 /*****************************************************************************/
-/** Check link status changes reported from phy device
- *
- * \param dev		\IN net_device struct for this NIC
- *
- */
-static void z77_handle_link_change(struct net_device *dev)
-{
-	struct z77_private *np = netdev_priv(dev);
-	struct phy_device *phydev = np->phy_dev;
-	unsigned long flags;
-
-	int status_change = 0;
-	spin_lock_irqsave(&np->lock, flags);
-
-	if (phydev->link) {
-		if (np->duplex != phydev->duplex) {
-			if (phydev->duplex)
-				Z077_SET_MODE_FLAG(OETH_MODER_FULLD);
-			else
-				Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
-
-			/* store updated value */
-			status_change = 1;
-			np->duplex = phydev->duplex;
-		}
-
-		if (np->speed != phydev->speed) {
-			status_change = 1;
-			switch (phydev->speed) {
-			case 100:
-			case 10:
-				/* printk(KERN_WARNING " Speed = %d\n", phydev->speed); */
-				break;
-			default:
-				printk(KERN_WARNING
-				       "%s: *** Speed (%d) is not 10/100\n", dev->name,
-				       phydev->speed);
-				break;
-			}
-			/* store updated value */
-			status_change = 1;
-			np->speed = phydev->speed;
-		}
-	}
-
-	if (status_change) {
-		if (phydev->link) {
-			printk(KERN_INFO "%s: link up (%d/%s)\n",
-			       dev->name, phydev->speed,
-			       DUPLEX_FULL == phydev->duplex ? "Full" : "Half");
-
-			z77_reset( dev );
-			Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
-			np->nCurrTbd = 0;
-		}
-		else
-			printk(KERN_INFO "%s: link down\n", dev->name);
-	}
-
-	spin_unlock_irqrestore (&np->lock, flags);
-}
-
-
-/*****************************************************************************/
-/** dummy for MDIO phy reset
- *
- * \param bus 		\IN mii_bus struct attached to this NIC
- *
- */
-static int z77_mii_bus_reset(struct mii_bus *bus)
-{
-	return 0;
-}
-
-
-/*****************************************************************************/
-/** Probe PHY devices on give MII bus
- *
- * \param dev		\IN net_device struct for this NIC
- * \return pointer to device status struct
- */
-static int z77_mii_probe(struct net_device *dev)
-{
-
-	struct z77_private *np = netdev_priv(dev);
-	struct phy_device *phydev = NULL;
-	int phy_addr;
-
-	/* find the first phy */
-	for (phy_addr = 0; phy_addr < PHY_MAX_ADDR; phy_addr++) {
-		if (np->mii_bus->phy_map[phy_addr]) {
-			phydev = np->mii_bus->phy_map[phy_addr];
-			break;
-		}
-	}
-
-	if (!phydev) {
-		printk(KERN_ERR "%s: no PHY found\n", dev->name);
-		return -ENODEV;
-	}
-
-	/* attach the mac to the phy */
-	phydev = phy_connect(dev, dev_name(&phydev->dev),
-						 &z77_handle_link_change, 0,
-						 PHY_INTERFACE_MODE_MII);
-
-	if (IS_ERR(phydev)) {
-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
-		return PTR_ERR(phydev);
-	}
-
-	/* mask with MAC supported features - for MEN Z87 only basic features */
-	phydev->supported &= PHY_BASIC_FEATURES;
-
-	phydev->supported |= SUPPORTED_Asym_Pause | SUPPORTED_Pause;
-	phydev->advertising = phydev->supported;
-
-	np->speed 	= 0;
-	np->duplex 	= -1;
-	np->phy_dev = phydev;
-
-	return 0;
-}
-
-/*****************************************************************************/
-/** init MII bus from phy layer
- *
- * \param dev		\IN net_device struct for this NIC
- * \return 0 on success or negative error
- */
-static int z77_mii_init(struct net_device *dev)
-{
-	int err, i;
-	struct z77_private *np = netdev_priv(dev);
-
-	np->mii_bus = mdiobus_alloc();
-	if (np->mii_bus == NULL)
-		return -ENOMEM;
-
-	np->mii_bus->priv	= (void*)dev;
-	np->mii_bus->name 	= "z77_mii_bus";
-	np->mii_bus->read 	= &z77_mii_bus_read;
-	np->mii_bus->write 	= &z77_mii_bus_write;
-	np->mii_bus->reset 	= &z77_mii_bus_reset;
-	snprintf(np->mii_bus->id, MII_BUS_ID_SIZE, "men_z77_%d", np->instCount);
-
-	np->mii_bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
-	if (!np->mii_bus->irq) {
-		err = -ENOMEM;
-		goto err_out;
-	}
-
-	for (i = 0; i < PHY_MAX_ADDR; i++)
-		np->mii_bus->irq[i] = PHY_POLL;
-
-	platform_set_drvdata(np->dev, np->mii_bus);
-
-	if (mdiobus_register(np->mii_bus)) {
-		err = -ENXIO;
-		goto err_out_free_mdio_irq;
-	}
-
-	if (z77_mii_probe(np->dev) != 0) {
-		err = -ENXIO;
-		goto err_out_unregister_bus;
-	}
-
-	return 0;
-
-err_out_unregister_bus:
-	mdiobus_unregister(np->mii_bus);
-err_out_free_mdio_irq:
-	kfree(np->mii_bus->irq);
-err_out:
-	mdiobus_free(np->mii_bus);
-	return err;
-}
-#endif /* !defined(MEN_Z77_USE_OWN_PHYACCESS) */
-
-/*****************************************************************************/
-/** z77_retrieve_fpga_name - get FPGA name of 'this' Z87
- *
- *  called to obtain the FPGA filename so special cases like F218 and P511 can
- *  be handled.
- *
- * \param dev		\IN network device
- * \param chu		\IN chameleon unit found
- *
- * \return 			0 on success or -1 on error
- *
- */
-static int z77_retrieve_fpga_name( struct net_device *dev, CHAMELEON_UNIT_T *chamUnit )
-{
-	u32 value32 		= 0;
-	int retval 			= 0;
-	CHAM_FUNCTBL 		chamFctTable;
-    CHAMELEONV2_TABLE   table;
-    CHAMELEONV2_HANDLE 	*chamHdl=NULL;
-	struct z77_private  *np = NULL;
-
-	if ( (dev == NULL ) || ( chamUnit == NULL ) )
-		return(-1);
-
-	np = netdev_priv(dev);
-
-	/*
-	 * we have no direct handle to FPGA table from CHAMELEON_UNIT_T,
-	 * so set up a temporary chamFctTable and call TableIdent().
-	 */
-	OSS_Init(MEN_Z77_DRV_NAME, &G_osh);
-
-	/* check if we are on IO or memory mapped FPGA table */
-    pci_read_config_dword( chamUnit->pdev, PCI_BASE_ADDRESS_0, &value32 );
-
-    if ( value32 & PCI_BASE_ADDRESS_SPACE_IO ) { /* io mapped */
-#ifndef CONFIG_PPC
-    	CHAM_InitIo( &chamFctTable );
-#else	/* for PPCs, no I/O Mapping is supported; init as Mem mapped */
-		CHAM_InitMem( &chamFctTable );
-#endif
-    } else {
-    	CHAM_InitMem( &chamFctTable );
-    }
-	retval = chamFctTable.InitPci( G_osh, chamUnit->pdev->bus->number,
-								   chamUnit->pdev->devfn>>3, 0, &chamHdl );
-	if (!retval) {
-		chamFctTable.TableIdent( chamHdl, 0, &table );
-		Z77DBG( ETHT_MESSAGE_LVL2, MEN_Z77_DRV_NAME " Z87 instance found on FPGA '%s'\n", table.file );
-
-		if (!(strncmp(table.file, "F011", IC_BOARD_NAME_LEN ))) {
-			np->mac_offset  = Z77_MAC_OFFS_F11S;
-			np->board		= MEN_F11S;
-		}
-
-		if (!(strncmp(table.file, "F218", IC_BOARD_NAME_LEN ))) {
-			np->mac_offset  = Z77_MAC_OFFS_F218;
-			np->board		= MEN_F218;
-		}
-
-		if (!(strncmp(table.file, "P511", IC_BOARD_NAME_LEN ))) {
-			np->mac_offset 	= Z77_MAC_OFFS_P511;
-			np->board		= MEN_P511;
-		}
-
-		if (!(strncmp(table.file, "P513", IC_BOARD_NAME_LEN ))) {
-			np->mac_offset 	= Z77_MAC_OFFS_P513;
-			np->board		= MEN_P513;
-		}
-
-		OSS_Exit( &G_osh );
-	} else {
-		printk( KERN_INFO MEN_Z77_DRV_NAME " *** couldnt find FPGA table, exit. (retval = %x)\n", retval );
-		OSS_Exit( &G_osh );
-		return(-1);
-	}
-	return 0;
-}
-
-
-
-/*****************************************************************************/
-/** men_16z077_probe - PNP function for ETH
- *
- * This gets called when the chameleon PNP subsystem starts and
- * is called for each Eth unit. probe() is called when a 16Z077/87 instance
- * was found
+/** men_16z077_probe - PNP function for ETH, per instance
  *
  * \param chu		\IN wdt unit found
  * \return 			0 on success or negative linux error number
@@ -4001,62 +2974,22 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 {
 
 	u32 phys_addr 			= 0;
-	u32 ddr_addr 			= 0;
-	u32 ddr_len 			= 0;
-	void* ddr_virt 			= 0;
 	struct net_device *dev 	= NULL;
 	struct z77_private *np 	= NULL;
-
-	printk(KERN_INFO MEN_Z77_DRV_NAME " passed PHY mode(s): '%s'\n", mode);
 
 	dev = alloc_etherdev(sizeof(struct z77_private));
 	if (!dev)
 		return -ENOMEM;
 
-#ifdef CONFIG_PCI
 	if (pci_set_dma_mask(chu->pdev, Z87_BIT_MASK_32BIT) < 0) {
- 		printk(KERN_ERR MEN_Z77_DRV_NAME " *** DMA not suitable supported, exiting.\n");
+		printk(KERN_ERR MEN_Z77_DRV_NAME " *** DMA not suitable supported, exiting.\n");
 		goto err_free_reg;
 	}
 
-	if (pci_enable_device(chu->pdev)) {
- 		printk(KERN_ERR MEN_Z77_DRV_NAME "*** Error during pci_enable_device.\n");
-		return -ENODEV;
-	}
-
-	/* enable bus mastering */
-	pci_set_master(chu->pdev);
 	phys_addr = pci_resource_start(chu->pdev, chu->bar) + chu->offset;
 
-	if (nodma) {
-		/*
-		 * nodma=1 was passed: check if we are a P511 & remap PCI DDR on P511.
-		 * ensure that we are really servicing a P511. Check if:
-		 *  1) chameleon FPGA PCI bus number is !=0 (all ESM FPGAs are on bus 0)
-		 *  2) PCI Memory same chamel.group at BAR1 with size 0x2000000 (32M)
-		 */
-
-		/* TODO: seek Z043 of same chameleonV2 group! current offset is 0 */
-		ddr_addr = pci_resource_start(chu->pdev, P511_SDRAM_BAR) + 0;
-		ddr_len  = pci_resource_len(  chu->pdev,  P511_SDRAM_BAR );
-
-		if ((ddr_len == P511_BAR1_SDRAMSIZE) && ( chu->pdev->bus->number)) {
-			ddr_virt = ioremap_nocache( ddr_addr, ddr_len  );
-			printk(KERN_INFO "P511: BAR1 (phys 0x%08x len 0x%x remap to %p)\n",
-				   ddr_addr, ddr_len, ddr_virt );
-		} else {
-			printk(KERN_ERR "*** nodma=1 but device seems no P511!\n");
-			return -ENODEV;
-		}
-	}
-
 	/* base_addr is complete range from MODER to Rx Ring end  */
-    dev->base_addr=(unsigned long)ioremap_nocache(phys_addr, (u32)Z77_CFGREG_SIZE );
-#else
-    /* offset contains absolute address */
-    phys_addr = NO_CACHED_MEM | chu->offset;
-    dev->base_addr = phys_addr;
-#endif
+	dev->base_addr = (unsigned long)ioremap_nocache(phys_addr, (u32)Z77_CFGREG_SIZE );
 	dev->irq       = chu->irq;
 
 	if( dev_alloc_name( dev, "eth%d") < 0)
@@ -4065,21 +2998,18 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* setup the phy Info within the private z77_private struct */
 	np = netdev_priv(dev);
 
-#ifdef CONFIG_PCI
 	np->pdev = chu->pdev;
 	pci_set_drvdata(chu->pdev, dev);
-#endif
 
-#if LINUX_VERSION_CODE > VERSION_CODE(2,6,23)
-    netif_napi_add(dev, &np->napi, z77_poll, Z077_WEIGHT);
-    np->dev = dev;
-#endif
+	netif_napi_add(dev, &np->napi, z77_poll, Z077_WEIGHT);
+	np->dev = dev;
 
-	/*
-	 * store instance of 'this' Z87 to assign correct PHY address later
-	 * attention: if 2 Ethernets are in 2 FPGAs every chu->instance is 0!
-	 * therefore also add instance count
-	 */
+	/* enable bus mastering for this driver */
+	pci_set_master( chu->pdev );
+
+	spin_lock_init(&np->lock);
+
+	/* store Z87 instance to set its PHY address later, chu->instance starts @ 0 for every FPGA */
 	np->instance  = chu->instance;
 	np->instCount = G_globalInstanceCount;
 	G_globalInstanceCount++;
@@ -4089,15 +3019,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 #if defined(Z77_USE_VLAN_TAGGING)
 	dev->features |= Z87_VLAN_FEATURES;
-	/* on older kernels also assign the register functions here */
-# if  !defined(Z77_VLAN_OPS_CHANGE)
-	dev->vlan_rx_register = z77_vlan_rx_register;
-#  if LINUX_VERSION_CODE < VERSION_CODE(3,0,0) 
-	dev->vlan_rx_kill_vid = z77_vlan_rx_kill_vid;
-#  endif
-# endif
 #endif
-
 	/* pass initial debug level */
 	np->msg_enable = (dbglvl > Z77_MAX_MSGLVL) ? Z77_MAX_MSGLVL : dbglvl;
 
@@ -4106,42 +3028,21 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* Init bdBase and IP core related stuff depending on found core */
 	np->modCode = chu->modCode;
 
-	if (np->modCode == CHAMELEON_16Z077_ETH ) {
-		/* old OpenCore: BDs are placed at <FPGABase>+[0x400..0x800] */
-		np->bdBase 		= 	dev->base_addr + Z077_BD_OFFS;
-		np->tbdOff		=	0;
-		np->rbdOff		=	Z077_TBD_NUM;
-		np->bdOff		=	Z077_BD_AREA_SIZE;
-		strncpy(cardname, "16Z077", sizeof(cardname));
-
-	} else { /* New Cores */
-
-      if (!(np->bdBase = (unsigned long)kmalloc( Z077_BD_AREA_SIZE+Z077_BDALIGN, GFP_KERNEL))) {
-			printk( KERN_ERR "*** %s: kmalloc bdBase failed!\n", __FUNCTION__);
-			goto err_free_reg;
-		}
-		#ifdef NIOS_II
-		/* Z087 need bdBase aligned */
-		np->bdBase = (((np->bdBase & ~(Z077_BDALIGN-1))
-		               + Z077_BDALIGN) | NO_CACHED_MEM);
-        #endif
-		np->tbdOff	= Z077_TBD_NUM;
-		np->rbdOff	= 0;
-		np->bdOff	= 0;
-
-		/* clean BD Area */
-		memset((void*)np->bdBase, 0, Z077_BD_AREA_SIZE );
-		strncpy(cardname, "16Z087", sizeof(cardname));
-
-		/* and tell 16Z087 where the BDs start, without virtual mm offset */
-		Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, np->bdBase & ~VIRTUAL_MEM_OFFSET );
+	if (!(np->bdBase = (unsigned long)kmalloc( Z077_BD_AREA_SIZE+Z077_BDALIGN, GFP_KERNEL))) {
+		printk( KERN_ERR "*** %s: kmalloc bdBase failed!\n", __FUNCTION__);
+		goto err_free_reg;
 	}
 
-	if (nodma) {
-		np->ddr_len		= ddr_len;
-		np->ddr_addr	= ddr_addr;
-		np->ddr_virt	= ddr_virt;
-	}
+	np->tbdOff	= Z077_TBD_NUM;
+	np->rbdOff	= 0;
+	np->bdOff	= 0;
+
+	/* clean BD Area */
+	memset((void*)np->bdBase, 0, Z077_BD_AREA_SIZE );
+	strncpy(cardname, "16Z087", sizeof(cardname));
+
+	/* and tell 16Z087 where the BDs start, without virtual mm offset */
+	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, np->bdBase & ~PAGE_OFFSET );
 
 	printk(KERN_INFO MEN_Z77_DRV_NAME " found %s (phys 0x%08x irq 0x%x base addr 0x%08x )\n",
 		   cardname, (u32)phys_addr, chu->irq, (u32)(dev->base_addr));
@@ -4152,60 +3053,68 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* Check if its a 'new' Z87 (better would be an own IP core though..) */
 	if ( Z77READ_D32( dev->base_addr, Z077_REG_RXBDSTAT ) & REG_RXSTAT_REV ) {
 		np->coreRev = 1;
-		printk(KERN_INFO "Z077_REG_RXSTAT[6]=1: new Revision\n");
 	} else {
 		np->coreRev = 0;
 	}
 
-	/* Some Cards need special MAC number assignment.
-	 * retrieve 'real' board name/number from its ident Table and
-	 * assign their base MAC to the z7_private struct
-	 */
-	if (z77_retrieve_fpga_name( dev, chu ) < 0)
-
 	/* force new interrupt behavior */
-	Z77WRITE_D32( dev->base_addr, Z077_REG_COREREV, Z77READ_D32(dev->base_addr,
-	              Z077_REG_COREREV) | REG_COREREV_IRQNEWEN );
+	Z77WRITE_D32( dev->base_addr, Z077_REG_COREREV, Z77READ_D32(dev->base_addr, Z077_REG_COREREV) | REG_COREREV_IRQNEWEN );
 
 	if( !(Z77READ_D32(dev->base_addr, Z077_REG_COREREV)
-           & REG_COREREV_IRQNEWEN) ) {
+		  & REG_COREREV_IRQNEWEN) ) {
 		printk(KERN_WARNING "%s: Couldn't set to new IRQ behavior\n", __func__);
 	}
 
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
 	/* set up timer to poll for link state changes */
 	init_timer(&np->timer);
 	np->timer.expires = jiffies + np->timer_offset;
 	np->timer.data 	= (unsigned long)dev;
 	np->timer.function 	= z77_timerfunc;
-#endif
-	
+
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
-
-	/* All members set up, start probing PHY with driver builtin functions */
-	if (probe_z77(dev) == 0) {
-#if !defined(MEN_Z77_USE_OWN_PHYACCESS)
-		printk(KERN_INFO "probing for phy devices..");
-		if (!z77_mii_init(dev)) {
-			printk(KERN_INFO "..probing succeeded.\n");
-		}
+#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
+	dev->open				= z77_open;
+	dev->stop				= z77_close;
+	dev->hard_start_xmit	= z77_send_packet;
+	dev->get_stats			= z77_get_stats;
+	dev->tx_timeout			= z77_tx_timeout;
+	dev->do_ioctl			= z77_ioctl;
+	dev->get_stats			= z77_get_stats;
+	dev->set_multicast_list	= z77_set_rx_mode;
+#else
+	dev->netdev_ops 		= &z77_netdev_ops;
 #endif
+	dev->watchdog_timeo		= MY_TX_TIMEOUT;
+
+	/* use PHY address from passed module parameter */
+	np->mii_if.phy_id_mask 	= 0x1f;
+	np->mii_if.reg_num_mask = 0x1f;
+	np->mii_if.dev 			= dev;
+	np->mii_if.mdio_read 	= z77_mdio_read;
+	np->mii_if.mdio_write 	= z77_mdio_write;
+
+	/* YES, we support the ethtool utility */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
+	SET_ETHTOOL_OPS(dev,    &z77_ethtool_ops);
+#else
+	dev->ethtool_ops = &z77_ethtool_ops;
+#endif
+	/* Data setup done, now setup Connection */
+	if (chipset_init(dev, 0)) {
+		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
+		goto err_free_reg;
+	} else {
 		if (register_netdev(dev) == 0) {
-			/* Create linkstate sysfs file */
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21) )
 			if (device_create_file(&dev->dev, &dev_attr_linkstate))
 				dev_err(&dev->dev, "Error creating sysfs file\n");
-#endif
 		}
 		return 0;
 	}
 
 err_free_reg:
 	/* arrived here, we failed */
-#ifdef CONFIG_PCI
 	pci_set_drvdata(chu->pdev, NULL);
-#endif
 	free_netdev(dev);
 	printk("*** men_16z077_probe failed\n");
 	cleanup_card(dev);
@@ -4227,35 +3136,22 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 
 	struct net_device *dev = (struct net_device *)chu->driver_data;
 	struct z77_private *np = netdev_priv(dev);
-    Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove" );
-
-	if (nodma)
-		iounmap(np->ddr_virt );
-#ifndef MEN_Z77_USE_OWN_PHYACCESS
-	if (np->mii_bus)
-		mdiobus_unregister(np->mii_bus);
-
-	if (np->mii_bus->irq)
-		kfree(np->mii_bus->irq);
-#endif
+	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove" );
 
 	/* remove the work queue */
 	cancel_work_sync(&np->reset_task);
-
 	unregister_netdev(dev);	/* say goodbye to the kernel */
-
 	kfree((void*)np->bdBase);
 	return 0;
 }
 
 static u16 G_modCodeArr[] = {
-	CHAMELEON_16Z077_ETH,
 	CHAMELEON_16Z087_ETH,
 	CHAMELEON_MODCODE_END
 };
 
 static CHAMELEON_DRIVER_T G_driver = {
-	.name		=	"z077-eth",
+	.name		=	"z087-eth",
 	.modCodeArr = 	G_modCodeArr,
 	.probe		=	men_16z077_probe,
 	.remove		= 	men_16z077_remove
@@ -4304,11 +3200,6 @@ static int z77_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 static void __exit men_16z077_cleanup(void)
 {
 	men_chameleon_unregister_driver( &G_driver );
-
-#if defined(MEN_MM1)  /* deinit SMB2 lib for EEPROM readout */
-	printk("TODO SMB2 deinit ? \n");
-#endif
-
 }
 
 /*******************************************************************/
@@ -4322,111 +3213,22 @@ static void __exit men_16z077_cleanup(void)
  */
 static int __init men_16z077_init(void)
 {
-
 	int i=0;
-#if defined(MEN_P51X) || (defined(CONFIG_X86) && !defined( MEN_MM1 ))
-	int board = 0;
-	char brdname[6];  /* "F011S_" */
-	unsigned int sernum=0;  /* "F011S_" */
-	struct i2c_adapter *adap 		= NULL;
-	struct i2c_board_info i2cinfo;
-	struct i2c_client  *client 		= NULL;
-	int j=0, k=0;
 
-	memset(&i2cinfo, 0, sizeof(struct i2c_board_info));
-	i2cinfo.addr = MEN_F1x_EEID_SMB_ADR;
-	i2cinfo.flags = I2C_CLASS_HWMON;
-	strncpy(i2cinfo.type, "EEP", 3);
-
-#endif
-	printk(KERN_INFO MEN_Z77_DRV_NAME "\n");
-#if defined(MEN_Z77_USE_OWN_PHYACCESS)
-	printk(KERN_INFO MEN_Z77_DRV_NAME " using builtin PHY access functions.\n");
-#else
-	printk(KERN_INFO MEN_Z77_DRV_NAME " using phy driver platform functions.\n");
-#endif
 #if defined(Z77_USE_VLAN_TAGGING)
-	printk(KERN_INFO MEN_Z77_DRV_NAME " VLAN tag support enabled.\n");
+	printk(KERN_INFO MEN_Z77_DRV_NAME " VLAN support enabled.\n");
 #endif
 	printk(KERN_INFO MEN_Z77_DRV_NAME " version %s\n", version);
+	printk(KERN_INFO MEN_Z77_DRV_NAME " passed PHY mode(s): '%s'\n", mode);
 
-	/* sanity checks, parse phy modes */
-	if (( nodma ) && (nodma != 1)) {
-		printk(KERN_ERR "*** invalid nodma parameter, must be 0 or 1 !\n");
-		goto errout;
-	}
-
-    for (i = 0; i < NR_ETH_CORES_MAX; i++ ) {
+	for (i = 0; i < NR_ETH_CORES_MAX; i++ ) {
 		if ( (phyadr[i] < 0) || ((phyadr[i] > PHY_MAX_ADR))) {
-			printk(KERN_ERR "*** invalid phyadr[%d] = %d, must be 0..31 !\n",
-				   i, phyadr[i] );
+			printk(KERN_ERR "*** invalid phyadr[%d] = %d, must be 0..31 !\n", i, phyadr[i] );
 			goto errout;
 		}
 	}
-	z77_parse_mode(strlen(mode), mode);
 
-#if defined(MEN_P51X) || (defined(CONFIG_X86) && !defined( MEN_MM1 ))
-	/* if F1x or P51x board: try detecting the ID EEPROM and read out name & serial nr.
-	   we try finding device address 0x57 (0xAE in 8bit notation).
-	   currently we have only F11S with an FPGA interface, but be prepared for sidecards
-	   or PMCs.	*/
-	for (i=0; i<I2C_MAX_ADAP_CNT; i++) {
-		adap = i2c_get_adapter(i);
-		if (adap != NULL) {
-			memset( brdname, 0x0, sizeof(brdname));
-			sernum = 0;
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25) )
-			/* client = i2c_new_dummy( adap, MEN_F1x_EEID_SMB_ADR ); */
-			client = i2c_new_device( adap, &i2cinfo );
-#else
-			client = i2c_get_client(0, I2C_CLASS_HWMON, client);
-#endif
-			if (client) {
-				/* EEPROM @ 0x57 found, 9. char is 'F' -> looks very much like board ID */
-				for ( j=ID_EE_NAME_OFF; j < (ID_EE_NAME_OFF + ID_EE_NAME_LEN); j++ ) {
-					brdname[j-ID_EE_NAME_OFF] = i2c_smbus_read_byte_data(client, j);
-				}
-				for ( j=ID_EE_SERN_OFF + ID_EE_SERN_LEN,k=0; j > ID_EE_SERN_OFF; j--,k++ )
-					sernum |= (i2c_smbus_read_byte_data(client, j)) << (k*8);
-
-				/* found F1x or P51x board ? */
-				if (brdname[0] == 'F') {
-					if ( brdname[1] == '0')
-						board = (10*(brdname[2]-'0') + (brdname[3]-'0'));
-					else
-						board = (10*(brdname[1]-'0') + (brdname[2]-'0'));
-				}
-
-				if (brdname[0] == 'P') /* always '511' or '513' */
-						board = (100*(brdname[1]-'0') + (10 * brdname[2]-'0') + (brdname[3]-'0'));
-
-				if (board > 0) {
-					/* unregister & put back claimed dummy device and client, */
-					/* or module unload/ reload leads to kernel oops (adapter still busy).*/
-					i2c_unregister_device( client );
-					i2c_put_adapter( adap );
-					break;
-				}
-				i2c_unregister_device( client );
-			}
-			i2c_put_adapter( adap );
-		}
-	}
-
-	/* no meaningful data or nothing found ? complain but use default MAC */
-	if ( board == 0 ) {
-		printk(KERN_WARNING MEN_Z77_DRV_NAME " *** no board ident EEPROM with serial# found. Using default.\n",
-			   board, sernum);
-	} else {
-		printk(KERN_INFO MEN_Z77_DRV_NAME " Found ID EEPROM: board: %d ser# %ld\n",
-			   board, sernum);
-		/* set the global macadr[6] least 3 byte according to Ethernet numbers document */
-		G_sernum = sernum;
-	}
-#endif
-
-	if (serialnr > 0)
-		G_sernum = serialnr;
+	z77_parse_mode( strlen(mode), mode );
 
 	/* men_chameleon_register_driver returns count of found instances */
 	if (!men_chameleon_register_driver( &G_driver ))
@@ -4434,7 +3236,7 @@ static int __init men_16z077_init(void)
 	else
 		return 0;
 
- errout:
+errout:
 	return -EINVAL;
 }
 
@@ -4442,5 +3244,7 @@ module_init(men_16z077_init);
 module_exit(men_16z077_cleanup);
 
 MODULE_LICENSE( "GPL" );
-MODULE_DESCRIPTION( "MEN Ethernet IP core unit driver" );
+MODULE_DESCRIPTION( "MEN Ethernet IP Core driver" );
 MODULE_AUTHOR("thomas.schnuerer@men.de");
+
+#endif /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29) */

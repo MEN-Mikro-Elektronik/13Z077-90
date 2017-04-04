@@ -96,24 +96,12 @@
 
 /* for EP05 support of mdio_bus facility was requested */
 #if defined(CONFIG_MENEP05)
-/* the phy platform driver facilities were introduced in 2.6.28 */
-# if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,28))
-#  define MEN_Z77_USE_OWN_PHYACCESS
-# else
 #  include <linux/phy.h>
 #  include <linux/mii.h>
-# endif
-#else
-#  define MEN_Z77_USE_OWN_PHYACCESS
 #endif
 
 #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
 #define Z77_USE_VLAN_TAGGING
-#endif
-
-/* from kernel 2.6.29 on the VLAN ID register functions were moved to struct net_device_ops */
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,28))
-#define Z77_VLAN_OPS_CHANGE
 #endif
 
 #define MEN_Z77_DRV_NAME  "MEN ETH driver:"
@@ -641,7 +629,7 @@ typedef struct phy_device_tbl
 typedef struct z077_bd {
     unsigned short 	BdLen;		/*!< # of bytes to transmit/receive			 */
     unsigned short 	BdStat;		/*!< the 16bit Statusword 					 */
-    unsigned int 	BdAddr;		/*!< pointer to buffer (cpu addr) 			 */
+    void * 			BdAddr;		/*!< pointer to buffer (cpu addr) 			 */
 	dma_addr_t		hdlDma;		/*!< return handle from pci_alloc_consistent */
 #if defined(Z77_USE_VLAN_TAGGING)
 	u32				vlan_tag;	/*!< if VLANs used: VLAN tag of this frame 	 */
