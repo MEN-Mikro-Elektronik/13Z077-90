@@ -873,7 +873,7 @@ static void z77_timerfunc(unsigned long dat)
 	struct net_device *dev = (struct net_device *)dat;
 	struct z77_private *np = netdev_priv(dev);
 	linkstate = mii_link_ok(&np->mii_if);
-	printk( KERN_INFO " z77_timerfunc: linkstate = %d np->prev_linkstate = %d\n", linkstate, np->prev_linkstate);
+	/* printk( KERN_INFO " z77_timerfunc: linkstate = %d np->prev_linkstate = %d\n", linkstate, np->prev_linkstate);  */
 	if ( np->prev_linkstate != linkstate ) {
 		if ( linkstate == 1 ) { /* link came up: restart IP core */
 			z77_reset( dev );
@@ -886,7 +886,7 @@ static void z77_timerfunc(unsigned long dat)
 		}
 		np->prev_linkstate = linkstate;
 	}
-	
+
 	/* restart timer */
 	np->timer.expires = jiffies + np->timer_offset;
 	add_timer(&np->timer);
@@ -2319,7 +2319,6 @@ static int z77_get_mac_from_board_id(u8 *mac)
 	for ( i=0; i < I2C_MAX_ADAP_CNT; i++ ) {
 		adap = i2c_get_adapter(i);
 		if (adap != NULL) {
-			memset( brdname, 0x0, sizeof(brdname));
 			if ((client = i2c_new_device( adap, &i2cinfo ))) {
 				/* is it MEN board ident EEPROM ? yes if 'F' or 'G' for a card name found */
 				brd = (char)i2c_smbus_read_byte_data(client, ID_EE_NAME_OFF );
