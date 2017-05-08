@@ -9,270 +9,34 @@
  *               supports kernel 2.6 and 3.x
  *
  *     Switches:
- *  			 MENEP05     defined for build with MEN EP05/6/7
- *				 NO_PHY      defined for specific PHY-less HW
  */
 /*-------------------------------[ History ]---------------------------------
  *
- * ------------- end of cvs controlled source -------------------
- * $Log: men_16z077_eth.c,v $
+ * end of cvs source control. Latest CVS logmessage was:
  * Revision 1.45  2014/07/16 19:30:45  ts
  * R: 1. Compilerwarning: incompatible pointer type of .ndo_vlan_rx_add_vid
  *    2. several compilerwarnings about typecasts with gcc 4.8, kernel 3.14
  * M: 1. corrected declaration of z77_vlan_rx_add_vid
  *    2. changed variable types to appropriate ones, use unsigned long etc.
  *
- * Revision 1.44  2014/06/11 12:14:37  ts
- * R: from kernel 3.10 on build failed because of undefined symbols
- * M: replace NETIF_xxx flags for VLAN support with xxx_CTAG_ as in 3.10.0 and up
- *
- * Revision 1.43  2013/11/06 11:18:37  ts
- * R: under Arch linux 3.10.10 the board ID EEPROM wasnt found on F011C
- * M: increased I2C_MAX_ADAP_CNT to 32
- *
- * Revision 1.42  2013/10/02 13:30:57  ts
- * R: on F75P transfers were hanging under heavy load
- * M: corrected typo in z77_irq (all IRQs except RXE were ack'ed, not RXF)
- *
- * Revision 1.41  2013/08/20 15:26:57  ts
- * R: during tests on F75P multiple instances of netio etc. stopped working
- * M: in send_packet() free skb buffers also before return due to TX busy
- *
- * Revision 1.40  2013/07/10 18:16:48  ts
- * R: minimum frame len 0x40 made problem in customer application due
- *    to PACKLEN register interpreting the value without FCS
- * M: changed header file, reverted this files last work checking for
- *    other CPU back to 1.38 to avoid other side effects
- *
- * Revision 1.39  2013/04/19 17:41:40  ts
- * R: work checkin for F75P test
- *
- * Revision 1.38  2013/03/23 14:13:23  ts
- * R: checkin bug during last revision caused spin unlocking 2 times
- * M: removed doubled line in ethtool info get function
- *
- * Revision 1.37  2013/03/08 17:40:54  ts
- * R: 1. upon TX timeouts driver could hang
- *    2. very high IRQ load (broadcast storms) could cause crash
- * M: 1. move ndo_tx_timeout handler into process context
- *    2. reworked IRQ masking/reenabling in z77_irq
- *
- * Revision 1.36  2012/11/06 20:17:14  ts
- * R: 1. support for Multicast reception requested by customer
- *    2. MAC addrs for x86 boards were not generated according to ident EEprom
- *    3. build failed for kernel versions > 3.0
- * M: 1. added hash CRC calculation and hash bin setting
- *    2. added detection of board ident EEPROMs (currently F11S / P51x) and
- *       MAC generation. Needs men_lx_z001 loaded for P51x.
- *    3. added API changes (multicast, VLAN processing) for kernel up to 3.6
- *
- * Revision 1.35  2012/10/01 11:57:38  ts
- * R: 1. MAC Address of Z87 instances on different FPGAs/boards were not handled
- *    2. cosmetics, debug messages had no identical look
- * M: 1. added detection of CPU board type and FPGA table readout to assign MAC
- *       as specified in ETH mac numbers document
- *    2. added driver identifier as prefix to all debug printouts
- *
- * Revision 1.34  2012/09/24 14:23:15  ts
- * R: packet length reported on raw sockets was 4 byte too large
- * M: subtract length of CRC bytes from pkt_len
- *
- * Revision 1.33  2012/09/20 18:32:25  ts
- * R: 1. Multicast support was requested by customer
- *    2. mode parameter at modprobe is used for every instance, causing link
- *       problems when link needs to be renegotiated on one interface
- * M: 1. added CRC hashing, processing of mcast MACs passed to driver
- *    2. added parsing of comma separated Phy modes
- *
- * Revision 1.32  2012/09/07 18:03:33  ts
- * R: support for IEEE 802.1Q VLAN tagging requested by customer
- * M: 1. added capability to process VLAN tagged frames
- *    2. updated driver documentation
- *
- * Revision 1.31  2012/03/28 18:21:14  ts
- * R: support for phy driver platform necessary on EP05
- * M: 1. added members mii_bus and phy_device to z77_private struct
- *    2. added z77_mii_init/probe functions to fill mii_bus members and init phy
- *    3. added declaration compatible wrappers for z77_mdio_read/write
- *       to pass to mii_bus as read/write function
- *    4. define MEN_Z77_USE_OWN_PHYACCESS defined in .h file depending on kernel
- *       version (phy driver platform introduced from 2.6.28 on). Determines if
- *       previous builtin phy access or phy driver functions are used
- *
- * Revision 1.30  2011/06/08 18:01:32  rt
- * R: 1) Changing MAC addr. did not work.
- *    2) Settings can be changed even if interface is down (changes
- *       will be lost at interface up).
- *    3) Statistics improved.
- *    4) Under some special circumstates changing settings may not work
- *       correctly.
- *    5) Reduce output of driver messages.
- *    6) Interface restart after TX time-out may fail.
- *    7) Under high load a lot of packets are dropped.
- *    8) Z77: The empty buffer verification in z77_send_packet() is wrong.
- * M: 1.a) Z87 must be disabled to change MAC addr. (see z77_set_mac_address()).
- *      b) Don't overwrite MAC addr. at interface up.
- *    2) IFF_UP flag implemented.
- *    3.a) Added support for detailed RX/TX error counters.
- *      b) Increase the error counter only one time per error.
- *    4) Force link-up after setting settings (see z77_ethtool_set_settings()).
- *    5) Changed some kernel messages to driver debug messages.
- *    6) Restore settings after restart.
- *    7) Check if there is a free TBD for the next TX packet. If not stop
- *       TX queue timely.
- *    8) Negation added.
- *
- * Revision 1.29  2011/05/03 17:46:47  cr
- * R: 1. could not set MAC adress with ifconfig
- * M: 1. implemented z77_set_mac_address()
- *
- * Revision 1.28  2011/04/21 14:23:00  cr
- * R: 1. support ethtool for PHYless communication protocols (e.g. EP05 GPSI)
- * M: 1a) in z77_ethtool_get_settings(), read duplexity settings from Z087 registers and hand
- *        over to ethtool if we are in NO_PHY mode
- *    1b) in z77_ethtool_set_settings(), set duplexity in Z087 registers without reading it back
- *        from the PHY in case we have NO_PHY
- *
- * Revision 1.27  2011/03/16 17:59:10  ts
- * R: driver did not support promiscuous mode of Z087 core
- * M: added processing IFF_PROMISC flag passed from network applications
- *
- * Revision 1.26  2011/02/23 15:10:47  rt
- * R: 1) FPGA units set-up to old IRQ behavior may freeze the Linux system.
- *    2) If all RXBDs are full the Linux system may freeze.
- * M: 1.a) Force new IRQ behavior.
- *      b) Changed i to signed int in z77_process_rx().
- *      c) Print warning if z77_process_rx() is entered while all RXBDs are empty.
- *    2.a) Changed i to signed int in z77_process_rx().
- *      b) Try to use RXBDSTAT register in this case.
- *
- * Revision 1.25  2010/12/20 11:59:23  cr
- * R: changes of revision 1.24 were based on old revision 1.21
- * M: merged changes of revision 1.24 with revision 1.23
- *
- * Revision 1.23  2010/11/25 17:27:40  ts
- * R: link detection not reliably possible with ethtool
- * M: added sysfs file /sys/class/net/ethX/linkstate to read BMSR
- *
- * Revision 1.22  2010/11/18 09:23:23  cr
- * R: 1. support for EP05
- *    2. cosmetics
- * M: 1a) include fdt read/write support (of_platform.h) for EP05
- *    1b) define NO_PHY in case GPSI mode is configured
- *    1c) takeover MAC and PHY address from fdt
- *    2a) only declare writemac if MEN_MM1 is defined (caused compiler warning)
- *    2b) in z77_set_mac_address: commented out variable nic (caused compiler warning)
- *
- * Revision 1.21  2010/10/14 13:21:26  ts
- * R: module rmmod and re-modprobe caused oops
- * M: NAPI change introduced in 1.12 did not disable NAPI in module exit, fixed
- *
- * Revision 1.20  2010/08/20 19:46:01  rt
- * R: 1) Support for EM9A.
- *    2) Cosmetics.
- * M: 1) a) Added MAC determination.
- *       b) Set default PHY addresses.
- *    2) Warning if unclear how to build MAC address, etc.
- *
- * Revision 1.19  2010/06/04 11:45:15  ts
- * R: 1. new PHYs: Broadcom 54xx on F11S, MEN dummy PHY in F218 FPGA
- *    2. driver failed to compile with kernels > 2.6.30 because API changed
- * M: 1. added PHY IDs in PHY table
- *    2. added support for struct net_device_ops
- *
- * Revision 1.18  2010/02/19 16:37:52  ts
- * R: deprecated SHIRQ flag causes warning in 2.6.22 already
- * M: use new IRQF_SHARED in 2.6.19 and up (was introduced in 2.6.18)
- *
- * Revision 1.17  2010/01/25 16:33:41  rt
- * R: 1) Cosmetics
- * M: 1) Avoid compiler warning at printk.
- *
- * Revision 1.16  2009/09/17 15:07:18  ts
- * R: 1) Link changes were not processed correctly and displayed
- *    2) under heavy load unprocessed RX BDs might occur
- * M: 1) Added periodically link status check and adjustment of PHY settings
- *    2) reworked algorithm to process RX BDs so none can be left
- *
- * Revision 1.15  2009/06/09 14:40:23  ts
- * R: 1. 16Z087 not working correct currently (PCIe and FIFO errors)
- *    2. when TX timeout occured (NETDEV_WDOG timeout) NIC was
- *       not restarted properly
- * M: 1. intermediate working checkin done
- *    2. corrected z77_tx_timeout to call z77_close()
- *
- * Revision 1.14  2009/02/18 14:19:46  GLeonhardt
- * R:1. file not compileable for NIOS2
- *   2. no memory for bdBase alignement
- * M:1. remove SYS_Param_Get
- *   2. alloc memory for alignment
- *
- * Revision 1.13  2009/02/10 19:17:18  ts
- * R: additional support for 15P511 was necessary
- * M: added parameters nodma and multiple instance support
- *
- * Revision 1.12  2008/07/14 11:08:24  aw
- * R: kernel napi interface changed at version 2.6.23
- * M: adapted ethernet driver
- *
- * Revision 1.11  2008/06/27 14:44:04  aw
- * R: Sysparam library was needed at F302
- * M: Added SysParamGet to get serial number, MAC address and PHY address
- *
- * Revision 1.10  2008/04/23 17:51:50  ts
- * - made NIOS_II the only depending switch
- * - renamed message"Z77 initialised" into generic "ETH core initialized"
- *
- * Revision 1.9  2008/04/03 17:02:05  aw
- * bugfix - global reset not available at 16Z087, disable RX and TX to reset
- *
- * Revision 1.8  2008/03/20 14:50:12  aw
- * bugfix - declared same variable twice at define CONFIG_PCI
- *
- * Revision 1.7  2008/03/13 18:26:02  aw
- * bugfix - don't use PCI - functions if not defined CONFIG_PCI
- *
- * Revision 1.6  2008/03/12 10:18:16  aw
- * supports NIOS_II in combination with Z087
- *
- * Revision 1.5  2008/02/14 13:31:15  ts
- * bugfix: Broadcast reception in bit OETH_MODER_BRO is enabled if bit=1, not
- *         disabled! added bit to initialization of MODER Register
- *
- * Revision 1.4  2007/11/16 15:53:50  ts
- * Cosmetics, completed doxygen headers
- *
- * Revision 1.3  2007/10/26 16:54:38  ts
- * fixed: set HD/FD bit in MODER[10] according to passed ethtool call
- * cosmetics, doxygen headers cleaned
- *
- * Revision 1.2  2007/10/22 10:20:22  ts
- * made debug dumps available at runtime with ethtool -s eth0 msglvl [0..3]
- * bugfix: call unregister_netdev when module removed, caused oops with ifconfig
- * cosmetics: unified function names
- *            unnecessary defines removed
- *            doxygen function headers added
- *
- * Revision 1.1  2007/10/16 17:29:06  ts
- * Initial Revision
- *
- *---------------------------------------------------------------------------
- * (c) Copyright 2017 by MEN mikro elektronik GmbH, Nuremberg, Germany
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * For all later versions see git commit message from MEN website!  
  *
  ****************************************************************************/
+/* 
+ *  This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <linux/dma-mapping.h>
 #include <linux/etherdevice.h>
 #include <linux/netdevice.h>
@@ -296,8 +60,6 @@
 #include <linux/mii.h>
 #include <asm/page.h>
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29)  /* only support from 2.6.30 on */
-
 #include <MEN/men_typs.h>
 #include <MEN/oss.h>
 #include <MEN/mdis_err.h>
@@ -306,9 +68,9 @@
 #include <MEN/smb2.h>
 #include "men_16z077_eth.h"
 
-/* Defines */
+/* defines */
 
-/* # of supported Z87 Instances in the system */
+/* max. # of supported Z87 Instances in the system */
 #define NR_ETH_CORES_MAX		8
 /* timeout to wait for reply from MII */
 #define MII_ACCESS_TIMEOUT 		10000
@@ -323,24 +85,14 @@
 #define MCAST_HASH_MASK			0x3f    	/* pass up only lower 6 bit */
 #define LEN_CRC					4			/* additional CRC bytes present in Frames */
 #define I2C_MAX_ADAP_CNT		16			/* max. # of I2C adapters to query ID EEPROM */
-
 #define MEN_BRDID_EE_ADR   		0x57		/* ID EEPROM addres on F1x cards = 0x57 */
 #define ID_EE_NAME_OFF 			9			/* board name offset in ID EEPROM */
 #define MEN_BRDID_EE_MAC_OF 	0x90		/* begin of MAC(s) in Board ID EEPROM */
 #define ID_EE_NAME_LEN			6			/* length of name in ID EEPROM */
-
-#if 0
-# undef MEN_BRDID_EE_ADR
-# undef ID_EE_NAME_OFF	
-# undef MEN_BRDID_EE_MAC_OF
-# warning set MEN_BOARDID_EE_ADR back to 0x57 ! testdata only !
-# define MEN_BRDID_EE_ADR   	0x50
-# define ID_EE_NAME_OFF 		0x71		/* board name offset in ID EEPROM 'B' from BenQ */
-# define MEN_BRDID_EE_MAC_OF 	0x90		/* begin of MAC(s) in Board ID EEPROM */
-#endif
+#define RX_BD_ALL_FULL 			(0xffffffff)
 
 /* all used IRQs on the Z87 */
-#define Z077_IRQ_ALL (OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE | OETH_INT_BUSY | OETH_INT_TXB)
+#define Z077_IRQ_ALL 			(OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE | OETH_INT_BUSY | OETH_INT_TXB)
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
@@ -350,9 +102,9 @@
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-# define Z87_VLAN_FEATURES    (NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX)
+# define Z87_VLAN_FEATURES    	(NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX)
 #else
-# define Z87_VLAN_FEATURES    (NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
+# define Z87_VLAN_FEATURES    	(NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0)
@@ -364,7 +116,7 @@
 #endif
 
 #ifdef NIOS_II
-# warning NIOS_II (non-MMU driver) not longer supported. Use older driver if needed!
+# error NIOS_II (non-MMU driver) not longer supported. Use older driver if needed!
 #endif
 
 #define VLAN_TAG_SIZE			4		/* how much longer VLAN frames are */
@@ -374,9 +126,15 @@
 #error EP05 no longer supported
 #endif
 
-/* Macro for debugging with ethtool -s ethX msglvl <n>. n=0 (no debugs)-3 (very verbose + IRQ messages - use with care!) */
+/* Macro for debugging with ethtool -s ethX msglvl <n>. n=0 (no debugs)-3 (very verbose + IRQ messages, use with care)
+   printk rate limitation can be controlled from user space:
+   values in /proc/sys/kernel/printk_ratelimit and 
+             /proc/sys/kernel/printk_ratelimit_burst are the # of seconds to wait before re-enabling messages 
+			 and the number of messages accepted before ratelimiting.
+ */
 #ifdef DBG
-#define Z77DBG(lvl,msg...) 	  if (np->msg_enable >= lvl)	printk( msg );
+#define Z77DBG(lvl,msg...) 	  if (np->msg_enable >= lvl)	   \
+										 printk( msg );
 #else
 #define Z77DBG(lvl,msg...) 	  do {} while (0)
 #endif
@@ -385,7 +143,7 @@
 #define PHY_ID2_KSZ8041_1	0x1512
 #define PHY_ID2_KSZ8041_2	0x1513
 
-/* Typedefs  */
+/* Typedefs */
 
 /* Add more possible PHY IDs here */
 static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
@@ -412,17 +170,17 @@ struct z77_private {
 	u32					txIrq;				/*!< last serviced TX IRQ			*/
 	u32					modCode;			/*!< chameleon modCode				*/
 	unsigned long		bdBase;				/*!< start address of BDs in RAM 	*/
+	dma_addr_t 			bdPhys;				/*!< DMA address of BDs in RAM 		*/
+	u32 				pollInProgress;
 	u32 				bdOff;				/*!< BDoffset from BAR start 		*/
 	u32 				tbdOff;				/*!< TX Buffer offset to phys base  */
 	u32 				rbdOff;				/*!< TX Buffer offset to phys base  */
 	u32					serialnr;			/*!< serial nr. of P51x or MM1 		*/
 	u32					board;				/*!< board identifier of this eth 	*/
-	u32					gotBusy;			/*!< BUSY irq flag, clears in NAPI  */
 	SMB_DESC_PORTCB 	smb2desc;       	/*!< SMB2 descriptor for EEPROM     */
 	void            	*smbHdlP;			/*!< SMB2 Handle 					*/
 	struct work_struct 	reset_task; 		/*!< process context reseting (ndo_tx_timeout) */
 	struct timer_list 	timer;				/*!< period timer for linkchange poll */
-	u32					timer_offset;		/*!< offset for link change poll 	*/
 	u32					prev_linkstate;		/*!< previous link state */
 #if defined(Z77_USE_VLAN_TAGGING)
 	struct vlan_group	*vlgrp; 			/*!< VLAN tagging group */
@@ -458,7 +216,7 @@ static int z77_phy_reset(struct net_device *dev, u8 phyAddr);
 static int z77_phy_identify(struct net_device *dev, u8 phyAddr);
 static int z77_phy_init(struct net_device *dev);
 static int z77_init_phymode(struct net_device *dev, u8 phyAddr);
-static int z77_pass_packet( struct net_device *dev, unsigned int idx );
+static void z77_pass_packet( struct net_device *dev, unsigned int idx );
 static int z77_mdio_read(struct net_device *dev, int phy_id, int location);
 static void z77_mdio_write(struct net_device *dev, int phy_id, int location, int val);
 static void z77_reset( struct net_device *dev );
@@ -504,11 +262,11 @@ static int phyadr[NR_ETH_CORES_MAX]    = {0,0,0,0,0,0,0,0};
 static int mode[NR_ETH_CORES_MAX]      = {0,0,0,0,0,0,0,0};
 
 module_param_array( mode, int, (void*)&nrcores, 0664 );
-MODULE_PARM_DESC( mode, "PHY#n mode 0=Autoneg, 1=10MbitHD, 2=10MbitFD, 3=100MbitHD, 4=100MbitFD. Example: mode=4,0,0");
+MODULE_PARM_DESC( mode, " 0=autoneg 1=10MbitHD 2=10MbitFD 3=100MbitHD 4=100MbitFD   example: mode=4,0,0");
 module_param_array( phyadr, int, (void*)&nrcores, 0664 );
-MODULE_PARM_DESC( phyadr, "Address of PHY#n connected to each Z87 unit. Example: phyadr=1,2,0");
+MODULE_PARM_DESC( phyadr, " address of PHY#n connected to each Z87 unit. example: phyadr=1,2,0");
 module_param( dbglvl, int, 0664 );
-MODULE_PARM_DESC( dbglvl, "initial debug level. (0=none, 3=very verbose)");
+MODULE_PARM_DESC( dbglvl, " 0=none 1=basic 2=verbose 3=very verbose (dumps every packet, use with care!). ");
 
 /* helper to keep Register descriptions in a comfortable struct */
 const Z077_REG_INFO z77_reginfo[] = {
@@ -634,8 +392,6 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 	if (data == NULL)
 		return -1;
 
-	Z77DBG( ETHT_MESSAGE_LVL2, " ether_gen_crc: addr = %02x:%02x:%02x:%02x:%02x:%02x - ", p[0], p[1], p[2], p[3], p[4], p[5] );
-
 	while ( --length >= 0 ) {
 		curr_oct = *data++;
 		for (bit = 0; bit < 8; bit++ ) {
@@ -651,7 +407,7 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 
 	/* return bin position */
 	hashbin = (int)((crc >> MCAST_MULT_SHFT) & MCAST_HASH_MASK);
-	Z77DBG( ETHT_MESSAGE_LVL2, MEN_Z77_DRV_NAME " bin=0x%02x\n", hashbin );
+
 	return(hashbin);
 }  /* ether_gen_crc */
 
@@ -724,7 +480,7 @@ static void z77_hash_table_setup(struct net_device *dev)
 	}
 #endif
 
-	Z77DBG( ETHT_MESSAGE_LVL2, MEN_Z77_DRV_NAME " z77_hash_table_setup: HASH0=0x%08x HASH1=0x%08x\n",
+	Z77DBG( ETHT_MESSAGE_LVL3, MEN_Z77_DRV_NAME " z77_hash_table_setup: HASH0=0x%08x HASH1=0x%08x\n",
 			hash0, hash1);
 	Z77WRITE_D32( Z077_BASE, Z077_REG_HASH_ADDR0, hash0 );
 	Z77WRITE_D32( Z077_BASE, Z077_REG_HASH_ADDR1, hash1 );
@@ -877,18 +633,17 @@ static void z77_timerfunc(unsigned long dat)
 	if ( np->prev_linkstate != linkstate ) {
 		if ( linkstate == 1 ) { /* link came up: restart IP core */
 			z77_reset( dev );
-			udelay(10);
 			Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
 			np->nCurrTbd = 0;
 			printk( KERN_INFO MEN_Z77_DRV_NAME " (%s): link is up\n", dev->name);
-		} else {/* link went down: close device */
+		} else { /* link went down: close device */
 			printk( KERN_INFO MEN_Z77_DRV_NAME " (%s): link is down\n", dev->name);
 		}
 		np->prev_linkstate = linkstate;
 	}
 
 	/* restart timer */
-	np->timer.expires = jiffies + np->timer_offset;
+	np->timer.expires = jiffies + CONFIG_HZ / 2;
 	add_timer(&np->timer);
 
 }
@@ -1370,52 +1125,34 @@ static int z77_bd_setup(struct net_device *dev)
 
 	/* Setup Tx BDs */
 	for ( i = 0; i < Z077_TBD_NUM; i++ ) {
-		memVirtDma = dma_alloc_coherent(&pcd->dev, Z77_ETHBUF_SIZE, &memPhysDma, GFP_KERNEL | GFP_DMA );
+		memVirtDma = dma_alloc_coherent(&pcd->dev, Z77_ETHBUF_SIZE, &memPhysDma, GFP_KERNEL );
 		np->txBd[i].BdAddr = memVirtDma;
 		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
 		Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
+		smp_wmb();
 	}
 
 	/* Setup Receive BDs */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
-		memVirtDma = dma_alloc_coherent( &pcd->dev, Z77_ETHBUF_SIZE, &memPhysDma, GFP_KERNEL | GFP_DMA );
-		dma_handle = dma_map_single( &pcd->dev, memVirtDma, (size_t)Z77_ETHBUF_SIZE, PCI_DMA_FROMDEVICE);
+		memVirtDma = dma_alloc_coherent( &pcd->dev, Z77_ETHBUF_SIZE, &memPhysDma, GFP_KERNEL );
+		dma_handle = dma_map_single( &pcd->dev, memVirtDma, (size_t)Z77_ETHBUF_SIZE, DMA_FROM_DEVICE);
 		np->rxBd[i].BdAddr = memVirtDma;
 		np->rxBd[i].hdlDma = dma_handle;
-
 		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
 		Z077_SET_RBD_ADDR( i, dma_handle );
+		smp_wmb();
 		Z077_SET_RBD_FLAG( i, Z077_RBD_IRQ | Z077_RBD_EMP );
+		smp_wmb();
 	}
 
 	/* close the Rx/Tx Rings with Wrap bit in each last BD */
 	Z077_SET_TBD_FLAG( Z077_TBD_NUM - 1 , Z077_TBD_WRAP );
 	Z077_SET_RBD_FLAG( Z077_RBD_NUM - 1 , Z077_RBD_WRAP );
+	smp_wmb();
 	return(0);
 }
 
 #if defined(Z77_USE_VLAN_TAGGING)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-/****************************************************************************/
-/** z77_vlan_rx_register - register a VLAN group ID
- *
- * \param dev		\IN net_device struct for this NIC
- * \param vid		\IN VLAN group ID
- *
- */
-static void z77_vlan_rx_register(struct net_device *dev, struct vlan_group *grp)
-{
-	struct z77_private *np = netdev_priv(dev);
-	unsigned long flags;
-
-	spin_lock_irqsave(&np->lock, flags);
-	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s\n", __FUNCTION__);
-	np->vlgrp = grp;
-	spin_unlock_irqrestore (&np->lock, flags);
-
-	return;
-}
-#endif
 
 /****************************************************************************/
 /** z77_vlan_rx_add_vid - add a VLAN group ID to this net device
@@ -1766,10 +1503,12 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 		}
 	} else {
 		/* set MODER[10] (HD/FD) according to passed duplex setting */
-		if (np->mii_if.full_duplex)
+		if (np->mii_if.full_duplex) {
 			Z077_SET_MODE_FLAG(OETH_MODER_FULLD);
-		else
+		}
+		else {
 			Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
+		}
 
 		if ((res = mii_ethtool_sset(&np->mii_if, &cmd))) {
 			printk(KERN_INFO "PHY setting fixed mode failed - fixed MEN Phy\n" );
@@ -1832,13 +1571,12 @@ static void z77_reset_task(struct work_struct *work)
 
 	printk(KERN_WARNING "%s: NETDEV WATCHDOG timeout! (%s)\n", dev->name, __FUNCTION__ );
 
-	if (np->msg_enable) {
+	if ( np->msg_enable ) {
 		printk(KERN_WARNING "Current register settings before restart:\n");
 		z77_regdump(dev);
 	}
 
 	settings_saved = !z77_ethtool_get_settings(dev, &ecmd);
-
 	z77_close(dev);
 	z77_open(dev);
 
@@ -1860,124 +1598,66 @@ static void z77_reset_task(struct work_struct *work)
  * \param dev			\IN net_device struct for this NIC
  *
  * \return -
- *
  */
 static void z77_tx_timeout(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL1, "z77_tx_timeout called!\n");
-	/* place reset outside of interrupt context (timer = soft irq!)*/
+	/* place reset outside of interrupt context, timer calls are soft IRQs */
 	schedule_work(&np->reset_task);
 }
 
 /****************************************************************************/
-/** z77_process_rx - process each nonempty Rx BD
+/** When RX0 or RX1 nonempty, return oldest entry. This is tailored for the
+ *  2 32bit Registers RX0_EMPTY, RX1_EMPTY.
  *
- * \param dev	 	\IN net_device struct of this interface
- * \param weight	\IN allowed # of packets to process in a call
- *
- * \brief
- * Without Rx position info determining oldest Rx frame
- * is complicated, several basic situations are possible:
- *
- * \verbatim
- * <-- BD fill direction of Z87 core -----
- * 63      RX1      32 31       RX0      0
- *  --------------------------------------
- * |                  |             oXXXXX|
- *  -------------------------------------^
- * |              oXXX|XXXXXXXXXXXXXX     |
- *  --------------------------------^-----
- * |       oXXXXXXX   |                   |
- *  --------------^-----------------------
- * |XXXXXXX           |                  o|
- *  ------^-------------------------------
- * |XX                |             oXXXXX|
- *  -^------------------------------------
- * |XXXXXXXXXXXXXXXXXX|XX              oXX|
- *  --------------------^-----------------
- * |XX            oXXX|XXXXXXXXXXXXXXXXXXX|
- *  -^------------------------------------
- *
- * ^ = oldest Rx frame in this cycle, which is to be passed to stack first
- * o = position available from new Rx count register 0x70
- *
- * Assumption made: always only one connected region of full BDs ('x') exists
- *
- * simplified Algorithm: 1. skip from Rx BD63 backwards until first full-empty
- *                          transition found. This is oldest Rx BD (startpos)
- *                       2. from startpos skip up and pass every nonempty BD
- *                          to network stack
- * \endverbatim
- *
- * PS: should ever Rx BD organisation change, this needs to be reworked.
- *     Code in here implies 64 Rx BDs in 2x32bit Registers!.
+ * \return oldest (rightmost) bit in Rx0/1_EMPTY
  */
-static int z77_process_rx( struct net_device *dev, int weight )
+static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
 {
-	int	nrframes = 0;
-	unsigned int start_pos=0, rx0, rx1, emp_n=0, emp_n1=0;
+	volatile u32 frameNum=0, emp_n=0, emp_n1=0;
 	int i;
+	u32 cnt=0;
 
-	/* For this poll-cycle we check RX BDs only here! */
-	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
-	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
+	for ( i = 63; i >=0; i-- ) 
+	{	/* the 64 Rx BDs are split in 2 x 32bit registers, check boundaries */
+		if (i > 32) { /* 63..33  RX1 only */
+			emp_n  = ( rx1 & ( 1 << (i-32)   ));
+			emp_n1 = ( rx1 & ( 1 << (i-32-1) ));
+		}
+		if (i == 32) { /* 32:  check border RX1/RX0 */
+			emp_n  = ( rx1 & 0x00000001 );
+			emp_n1 = ( rx0 & 0x80000000 );
+		}
+		if ( (i < 32) && ( i > 0) ) { /* 31..1 : RX0 only */
+			emp_n  = ( rx0 & ( 1 <<    i ));
+			emp_n1 = ( rx0 & ( 1 << (i-1)));
+		}
+		if ( i == 0) { /* 0->63 */
+			emp_n  = ( rx0 & 0x00000001 );
+			emp_n1 = ( rx1 & 0x80000000 );
+		}
 
-	if(!rx0 && !rx1)
-		return 0;
-
-	/* 1.) find oldest nonempty Rx BD in BDs */
-	if(!~rx0 && !~rx1){
-		/* all full, algorithm will not work! -> we try to get position from FPGA */
-		u32 rx_bd_stat = Z77READ_D32( dev->base_addr, Z077_REG_RXBDSTAT );
-		start_pos = rx_bd_stat & 63; /* start_pos=0 if reg is not implemented */
-	}
-	else {
-		/* start algorithm... */
-		for (i = 63; i >=0; i--) {
-			/* the 64 Rx BDs are split in 2 x 32bit registers, check boundaries */
-			if (i > 32) { /* 63..33  RX1 only */
-				emp_n  = (rx1 & ( 1 << (i-32)   ));
-				emp_n1 = (rx1 & ( 1 << (i-32-1) ));
-			}
-			if (i == 32) { /* 32:  check border RX1/RX0 */
-				emp_n  = ( rx1 & 0x00000001 );
-				emp_n1 = ( rx0 & 0x80000000 );
-			}
-			if ( (i < 32) && ( i > 0) ) { /* 31..1 : RX0 only */
-				emp_n  = (rx0 & ( 1 <<    i ));
-				emp_n1 = (rx0 & ( 1 << (i-1)));
-			}
-			if ( i == 0) { /* 0->63 */
-				emp_n  = (rx0 & 0x00000001 );
-				emp_n1 = (rx1 & 0x80000000 );
-			}
-
-			/* if at this position an full-empty border occurs, its start pos. */
-			if ( (emp_n != 0) && (emp_n1 == 0) ) {
-				/* rx0,rx1 is inversed RX[01]_EMPTY */
-				start_pos = i;
-				break;
-			}
+		/* if at this position an full-to-empty occurs it is our startposition to pass packets upwards from. 
+		   Otherwise go on and count # of frames. If another frame arrives right at this moment it will be handled
+		   after next IRQ enable and be the new start position.
+		*/
+		if ( (emp_n != 0) && (emp_n1 == 0) ) {			
+			frameNum = i;
+			break;
 		}
 	}
 
-	/* 2.) Now skip from start_pos forward until empty RX BDs occur again */
-	while (  nrframes < weight ) {
-		/* pass oldest nonempty packet */
-		z77_pass_packet( dev, start_pos );
-		nrframes++;
-
-		start_pos++;
-		start_pos %= Z077_RBD_NUM;
-
-		/* are we done ? */
-		if ( (start_pos < 32) &&  ((rx0 & (1 <<  start_pos )) == 0 ))
-			break;
-		if ( (start_pos >= 32) && ((rx1 & (1 << (start_pos-32) )) == 0 ))
-			break;
+	/* count all 1-bits to check how many packets are there to process in this NAPI poll */
+	for ( i = 31; i >=0; i-- ) {
+		if ( rx1 & (1 << i ))
+			cnt++;
+		if ( rx0 & (1 << i ))
+			cnt++;
 	}
-	return nrframes;
+
+	*nrframes = cnt;
+	return frameNum;
 }
 
 /****************************************************************************/
@@ -1985,34 +1665,40 @@ static int z77_process_rx( struct net_device *dev, int weight )
  *
  * \param napi			\IN NAPI struct for this NIC
  * \param budget		\IN allowed # of packets to process in a call
- *
+ *  
+ *  this is a softirq so dont use potentially sleeping sys calls!
+ * 
  * \return 0 if all packets were processed or 1 of not all was processed
  *
- * \brief  The poll routine works according to
- *         linux/Documentation/networking/NAPI_HOWTO.txt
- *         addendum ts: NAPI_HOWTO.txt was removed from vanilla kernel in 2.6.24
  */
 static int z77_poll(struct napi_struct *napi, int budget)
 {
-	int npackets = 0;
+	int	i=0;
+	u32 start_pos=0, rx0=0, rx1=0, nrframes=0;
 	struct z77_private *np = container_of(napi, struct z77_private, napi);
-    struct net_device *dev = np->dev;
+    struct net_device *dev = np->dev;		
 
-	Z77DBG( ETHT_MESSAGE_LVL3, "--> z77_poll:\n");
-	npackets = z77_process_rx( dev, budget );
+	/* bits in register are 1 for empty, 0 for full. we invert the logic */
+	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
+	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
 
-	if ( npackets < budget ) { /* we are done, for NOW */
-		napi_complete(napi);
-		/* acknowledge last Rx IRQ and expect new interrupts */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
-		if (np->gotBusy) {
-			Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_BUSY );
-			Z077_DISABLE_IRQ( OETH_INT_BUSY );
-			np->gotBusy=0;
+	if( rx0 || rx1 ) {
+		start_pos=z77_get_oldest_frame(rx0, rx1, &nrframes);
+		Z77DBG( ETHT_MESSAGE_LVL3, "z77_poll: %08x%08x sp %d #fr %d\n", rx1, rx0, start_pos, nrframes );
+		for (i=0; i < nrframes; i++)	
+		{	/* pass new arrived packets up the stack, from start_pos (oldest) nonempty packet to recent one */
+			z77_pass_packet( dev, start_pos );
+			start_pos++;
+			start_pos %= Z077_RBD_NUM;
 		}
-		Z077_ENABLE_IRQ(OETH_INT_RXF);
+	} 
+		
+	if ( nrframes < budget ) { /* we are done, for now */
+		napi_complete(napi);
+		Z077_ENABLE_IRQ( OETH_INT_RXF );
+        smp_mb();
 	}
-	return npackets;
+	return nrframes;
 }
 
 /****************************************************************************/
@@ -2031,7 +1717,7 @@ static int z77_poll(struct napi_struct *napi, int budget)
 static int z77_open(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
-	Z77DBG( ETHT_MESSAGE_LVL1, "-> %s(dev->name='%s') \n", __FUNCTION__, dev->name );
+	Z77DBG( ETHT_MESSAGE_LVL1, "-> %s %s\n", __FUNCTION__, dev->name );
 
 	/* do PHY/MAC initialization with forced mode or autonegotiation */
 	if (chipset_init(dev, 1)) {
@@ -2045,25 +1731,26 @@ static int z77_open(struct net_device *dev)
 	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
 
 	/* hook in the Interrupt handler */
-	if (request_irq(dev->irq, z77_irq, IRQF_SHARED, cardname, dev)) {
+	Z77DBG( ETHT_MESSAGE_LVL1, "%s: request IRQ %d\n", dev->name, dev->irq );
+	if (request_irq( dev->irq, z77_irq, IRQF_SHARED, cardname, dev)) {
 		printk(KERN_ERR "*** %s: unable to get IRQ %d.\n", dev->name, dev->irq);
 		return -ENOMEM;
 	}
 
+	np->open_time = jiffies;
+	/* (re-)kick off link change detection */
+	np->timer.expires = jiffies + CONFIG_HZ / 2;
+	add_timer(&np->timer);
+
 	napi_enable(&np->napi);
 
 	netif_start_queue(dev);
-	np->open_time = jiffies;
-  
-	/* (re-)kick off link change detection */
-	np->timer.expires = jiffies + np->timer_offset;
-	add_timer(&np->timer);
 
 	/* and let the games begin... */
 	Z077_ENABLE_IRQ( Z077_IRQ_ALL );
 	Z077_SET_MODE_FLAG(OETH_MODER_RXEN | OETH_MODER_TXEN );
-
 	np->flags |= IFF_UP;
+
 
 	Z77DBG( ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__ );
 	return 0;
@@ -2098,7 +1785,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	/* place Tx request in the recent Tx BD */
 	idxTx 	= np->nCurrTbd;
 
-	/* some statistics (ok they are old, but better collect them now than leave them totally) */
 	np->stats.collisions += Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_RETRY) >> 4;
 
 	/* Check if this Tx BD we use now is empty. If not -> drop . */
@@ -2120,16 +1806,16 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 #endif
 	}
 
-	Z77DBG(ETHT_MESSAGE_LVL2, "z77_send_packet[%d] len 0x%04x DMAadr %08x\n", idxTx, skb->len, np->txBd[idxTx].hdlDma );
-	dma_handle = dma_map_single( &pcd->dev, (void*)(np->txBd[idxTx].BdAddr), Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE );
+	Z77DBG(ETHT_MESSAGE_LVL2, "%s: z77_send_packet[%d] len 0x%04x\n", dev->name, idxTx, skb->len );
+	dma_handle = dma_map_single( &pcd->dev, (void*)(np->txBd[idxTx].BdAddr), Z77_ETHBUF_SIZE, DMA_TO_DEVICE );
 	np->txBd[idxTx].hdlDma = dma_handle;
 	Z077_SET_TBD_ADDR( idxTx, dma_handle);
-
+	smp_mb();
 	src 	= (u8*)buf;
 	dst 	= (u8*)np->txBd[idxTx].BdAddr;
 	frm_len = skb->len;
 
-# if defined(Z77_USE_VLAN_TAGGING)
+#if defined(Z77_USE_VLAN_TAGGING)
 	/* VLAN or regular frame ? */
 	if ( vlan_tag_present_func( skb )) {
 		vlan_id  = vlan_tag_get_func( skb );
@@ -2144,20 +1830,18 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 			   frm_len - ETH_SRCDST_MAC_SIZE); 		/* insert rest of the frame */
 		frm_len += VLAN_TAG_SIZE;
 	} else {
-		Z77DBG(ETHT_MESSAGE_LVL2, "standard frame:\n");
+		Z77DBG(ETHT_MESSAGE_LVL2, "\nstandard frame:");
 		memcpy(dst, src, skb->len);
 	}
-# else
-	Z77DBG(ETHT_MESSAGE_LVL2, "standard frame:\n");
+#else
+	Z77DBG(ETHT_MESSAGE_LVL2, "\nstandard frame:");
 	memcpy(dst, src, skb->len);
-# endif
+#endif
 
 	Z077_SET_TBD_LEN(  idxTx, frm_len );
+	smp_mb();
 
-	/* sync the mem ranges */
-	dma_sync_single_for_cpu( &pcd->dev, dma_handle, Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE);
-
-	/* very verbose debugging on? then dump frame */
+	/* very verbose debugging on? then dump sent frame */
 	if ( np->msg_enable >= ETHT_MESSAGE_LVL3 ) {
 		dst	= (u8*)np->txBd[idxTx].BdAddr;
 		for (i=0; i < frm_len; i++) {
@@ -2168,11 +1852,26 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 		Z77DBG(ETHT_MESSAGE_LVL3, "\n");
 	}
 
+	/* sync Tx buffer for write to device */
+	dma_sync_single_for_device( &pcd->dev, dma_handle, Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
+	/* prefetchw( (void*)(np->txBd[idxTx].BdAddr) ); */
+
+	/* sync BD buffer for write to device */
+	dma_sync_single_for_device( &pcd->dev, np->bdPhys, PAGE_SIZE, DMA_TO_DEVICE);
+
 	/* finally kick off transmission */
-	if (idxTx < 32)
+	if (idxTx < 32) {
 		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY0, 1 << idxTx );
-	else
+	}
+	else {
 		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY1, 1 << (idxTx - 32));
+	}
+
+	/* sync BD buffer for write to device */
+	dma_sync_single_for_device( &pcd->dev, np->bdPhys, PAGE_SIZE, DMA_TO_DEVICE);
+
+
+	smp_mb();
 
 	/* dev->trans_start = jiffies; */
 	np->stats.tx_bytes += skb->len;
@@ -2426,7 +2125,7 @@ cont_init:
 	moder = Z77READ_D32( Z077_BASE, Z077_REG_MODER );
 	moder |= OETH_MODER_IFG | OETH_MODER_EXDFREN | OETH_MODER_CRCEN | OETH_MODER_BRO | OETH_MODER_PAD | OETH_MODER_RECSMALL;
 	
-	if (((np->mii_if.full_duplex) || ( (mode[np->instCount] == phymode_10fd ) || (mode[np->instCount] == phymode_10fd))) &&	 (moder & OETH_MODER_HD_AVAL)) {
+	if ( ((np->mii_if.full_duplex) || ((mode[np->instCount] == phymode_10fd ) || (mode[np->instCount] == phymode_10fd))) &&	 (moder & OETH_MODER_HD_AVAL)) {
 		moder |= OETH_MODER_FULLD;
 	} 
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MODER, moder);
@@ -2457,7 +2156,7 @@ void z77_tx(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
 
-	pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma, Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE);
+	pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma, Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
 	np->txIrq++;
 	np->txIrq%= Z077_TBD_NUM;
 	np->stats.tx_packets++;
@@ -2473,44 +2172,46 @@ void z77_tx(struct net_device *dev)
  * \param dev		\IN net_device struct for this NIC
  * \param idx		\IN Rx BD index, 0..Z077_RBD_NUM
  *
- * \return 			-ENOMEM if packet squeeze or 0 on success
+ * \return 			-
  */
-static int z77_pass_packet( struct net_device *dev, unsigned int idx )
+static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 {
 
 	struct z77_private *np = netdev_priv(dev);
 	struct pci_dev *pcd = np->pdev;
 	struct sk_buff *skb = NULL;
 	u32 pkt_len = 0;
-	u32 i = 0;
-	char *buf = NULL;
+	int i=0;
+	u8 *dst=NULL;
+
+	prefetch(np->rxBd[idx].BdAddr);		
+
+	/* sync in data from IP core */
+	dma_sync_single_for_cpu( &pcd->dev, np->rxBd[idx].hdlDma, Z77_ETHBUF_SIZE, DMA_FROM_DEVICE );
 	
-	pkt_len	= Z077_GET_RBD_LEN( idx ) - LEN_CRC;
-	dma_sync_single_for_cpu( &pcd->dev, np->rxBd[idx].hdlDma, Z77_ETHBUF_SIZE, PCI_DMA_FROMDEVICE );
+	pkt_len	= Z077_GET_RBD_LEN( idx );
+
+	if (( np->rxBd[idx].BdAddr == NULL ) || ( pkt_len == 0 )) {
+		Z77DBG(ETHT_MESSAGE_LVL3, "invalid length of pkt %d (len=%d)!\n", idx, pkt_len );
+		return;
+	}
+
+	pkt_len	-= LEN_CRC;
 
 	skb = dev_alloc_skb( pkt_len + NET_IP_ALIGN );
-	Z77DBG(ETHT_MESSAGE_LVL3, "z77_pass_packet[%d]: pktlen=%04x\n", idx, pkt_len);
+	Z77DBG(ETHT_MESSAGE_LVL1, "z77_pass_packet[%d]: pktlen=%04x\n", idx, pkt_len);
 
 	if (skb) {
 		skb->dev = dev;
 		skb_reserve(skb, NET_IP_ALIGN); /* 16 byte align the IP fields. */
 		skb_copy_to_linear_data(skb, (void*)(np->rxBd[idx].BdAddr ), pkt_len);
 
-		/* very verbose debugging on? then dump frame */
-		if ( np->msg_enable >= ETHT_MESSAGE_LVL3 ) {
-			buf = (char*)(np->rxBd[idx].BdAddr);
-			Z77DBG(ETHT_MESSAGE_LVL3, "Frame:");
-			for (i=0; i < pkt_len; i++) {
-				if (!(i%16))
-					Z77DBG(ETHT_MESSAGE_LVL3, "\n0x%03x: ", i);
-				Z77DBG(ETHT_MESSAGE_LVL3, "%02x ", (unsigned char)(*buf++));
-			}
-			Z77DBG(ETHT_MESSAGE_LVL3, "\n");
-		}
-
 		skb_put(skb, pkt_len);
 		skb->protocol = eth_type_trans (skb, dev);
 
+		/* sync in data from IP core */
+		dma_sync_single_for_cpu( &pcd->dev, np->rxBd[idx].hdlDma, Z77_ETHBUF_SIZE, DMA_FROM_DEVICE );
+		
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
@@ -2520,16 +2221,16 @@ static int z77_pass_packet( struct net_device *dev, unsigned int idx )
 
 		/* clean processed Rx BD nonempty Flag */
 		if ( idx < 32 ) {
-			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY0, 1<< idx );
+			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY0, 1 << idx );
 		}
 		else {
-			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1, 1<< (idx-32));
+			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1, 1 << (idx-32));
 		}
-		return 0;
+		smp_mb();
+
 	} else {
 		printk (KERN_WARNING "*** %s:Mem squeeze! drop packet\n",dev->name);
-		np->stats.rx_dropped++;
-		return -ENOMEM;
+		np->stats.rx_dropped++;		
 	}
 }
 
@@ -2552,16 +2253,19 @@ static int z77_close(struct net_device *dev)
 	np->open_time = 0;
 	np->flags &= ~(IFF_UP);
 	netif_stop_queue(dev);
-
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_MASK, 0 );
-	/* clean spurious left IRQs */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
+	napi_disable(&np->napi);
 
 	/* stop receiving/transmitting */
 	Z077_CLR_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
-	
+
+	/* disable all IRQs */
+	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_MASK, 0 );
+
+	/* clean spurious left IRQs */
+	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
+
 	del_timer_sync(&np->timer);
-	napi_disable(&np->napi);
+
 	free_irq(dev->irq, dev);
 
 	/* free DMA resources */
@@ -2570,7 +2274,7 @@ static int z77_close(struct net_device *dev)
 
 	/* Rx BDs, these don't get unmapped after each packet so do that here */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
-		dma_unmap_single( &pcd->dev, np->txBd[i].hdlDma, Z77_ETHBUF_SIZE, PCI_DMA_TODEVICE);
+		dma_unmap_single( &pcd->dev, np->txBd[i].hdlDma, Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
 		dma_free_coherent( &pcd->dev, Z77_ETHBUF_SIZE, np->rxBd[i].BdAddr, np->rxBd[i].hdlDma);
 	}
 
@@ -2591,36 +2295,60 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	/* uses dev_id to store 'this' net_device */
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct z77_private *np = netdev_priv(dev);
-	int handled = 0;
+	u8 *dst=NULL;
+	int pkt_len,i,handled = 0;
 
 	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
-	if (!status)
+	if (!status) {
 		goto out;	/* It wasnt me, ciao. */
-
-	if (status & OETH_INT_RXF) { /* Got a packet. */
-		Z077_DISABLE_IRQ( OETH_INT_RXF ); /* acknowledged/reenabled in NAPI poll routine */
-		napi_schedule(&np->napi);
 	}
 
-	if (status & OETH_INT_TXB) { /* Transmit complete. */
+	if (status & OETH_INT_RXF) { 			/* Got a packet. */
+		Z077_DISABLE_IRQ( OETH_INT_RXF ); 	/* reenabled in NAPI poll routine */
+        mb();
+		Z077_DISABLE_IRQ( OETH_INT_RXF ); 	/* reenabled in NAPI poll routine */
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
+        mb();
+		/* sync BD buffer for write to device */
+		napi_schedule(&np->napi);
+	}
+	
+
+	if (status & OETH_INT_TXB) { 	/* Transmit complete. */
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx(dev);
 	}
 
 	if (status & OETH_INT_BUSY) { 	/* RX FIFO overrun ? */
-		np->gotBusy=1; 	/* clear after next NAPI poll round is done */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status & ~OETH_INT_RXE );
 	}
 
 	if (status & OETH_INT_TXE) {  	/* handle Tx Error */
+		/* acknowledge all IRQs except RXF (leave it asserted until current NAPI poll cycle is finished) */
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx_err(dev);
 	}
 
 	if (status & OETH_INT_RXE) {	/* handle Rx Error */
+		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_rx_err(dev);
 	}
-
-	/* acknowledge all IRQs except RXF (leave it asserted until current NAPI poll cycle is finished) */
-	Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status & ~OETH_INT_RXF );
 
 	handled = 1;
 out:
@@ -2653,15 +2381,32 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	u32 phys_addr 			= 0;
 	struct net_device *dev 	= NULL;
 	struct z77_private *np 	= NULL;
+	dma_addr_t memPhysDma;
+	void *     memVirtDma = NULL;
+
 
 	dev = alloc_etherdev(sizeof(struct z77_private));
 	if (!dev)
 		return -ENOMEM;
 
-	if (pci_set_dma_mask(chu->pdev, Z87_BIT_MASK_32BIT) < 0) {
-		printk(KERN_ERR MEN_Z77_DRV_NAME " *** DMA not suitable supported, exiting.\n");
+	/* enable bus mastering and set DMA mask for this driver */
+	pci_set_master( chu->pdev );
+#if 0
+	if ( dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(64))) {
+		printk(KERN_INFO MEN_Z77_DRV_NAME " can't set 64bit DMA mask, try 32bit.\n");
+		if (dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(32))) {
+			printk(KERN_ERR MEN_Z77_DRV_NAME " can't set 32bit DMA mask, aborting\n");
+			goto err_free_reg;
+		} else
+			printk(KERN_INFO MEN_Z77_DRV_NAME " using 32bit DMA mask\n");
+	} else
+		printk(KERN_INFO MEN_Z77_DRV_NAME " using 64bit DMA mask\n");
+#else
+	if (dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(32))) {
+		printk(KERN_ERR MEN_Z77_DRV_NAME " can't set 32bit DMA mask, aborting\n");
 		goto err_free_reg;
 	}
+#endif
 
 	phys_addr = pci_resource_start(chu->pdev, chu->bar) + chu->offset;
 
@@ -2679,19 +2424,14 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	spin_lock_init(&np->lock);
 	pci_set_drvdata(chu->pdev, dev);
 
-	netif_napi_add(dev, &np->napi, z77_poll, Z077_WEIGHT);
+	netif_napi_add( dev, &np->napi, z77_poll, Z077_WEIGHT );
 	np->dev = dev;
 
-	/* enable bus mastering for this driver */
-	pci_set_master( chu->pdev );
 
 	/* store Z87 instance to set its PHY address later, chu->instance starts @ 0 for every FPGA */
 	np->instance  = chu->instance;
 	np->instCount = G_globalInstanceCount;
 	G_globalInstanceCount++;
-
-	/* link change detect timer polls every 0.5 s */
-	np->timer_offset = CONFIG_HZ/2;
 
 #if defined(Z77_USE_VLAN_TAGGING)
 	dev->features |= Z87_VLAN_FEATURES;
@@ -2704,10 +2444,15 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* Init bdBase and IP core related stuff depending on found core */
 	np->modCode = chu->modCode;
 
-	if (!(np->bdBase = (unsigned long)kmalloc( Z077_BD_AREA_SIZE+Z077_BDALIGN, GFP_KERNEL))) {
-		printk( KERN_ERR "*** %s: kmalloc bdBase failed!\n", __FUNCTION__);
-		goto err_free_reg;
-	}
+	/* get a coherent DMAable memory region for the BDs to have the 64 Rx/Tx BD stati in sync with IP core */
+	memVirtDma = dma_alloc_coherent( &chu->pdev->dev, PAGE_SIZE, &memPhysDma, GFP_KERNEL );
+	/* dma_map_single( &chu->pdev->dev, memVirtDma, (size_t)Z77_ETHBUF_SIZE, DMA_BIDIRECTIONAL ); */
+	printk( KERN_INFO "dma_alloc_coherent: memVirtDma = %p, memPhysDma = %p\n", memVirtDma, memPhysDma);
+	memset((char*)(memVirtDma), 0, PAGE_SIZE);
+	/* Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, np->bdBase & ~PAGE_OFFSET ); */
+	np->bdBase = memVirtDma;
+	np->bdPhys = memPhysDma;
+	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, memPhysDma );
 
 	np->tbdOff	= Z077_TBD_NUM;
 	np->rbdOff	= 0;
@@ -2716,9 +2461,6 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* clean BD Area */
 	memset((void*)np->bdBase, 0, Z077_BD_AREA_SIZE );
 	strncpy(cardname, "16Z087", sizeof(cardname));
-
-	/* and tell 16Z087 where the BDs start, without virtual mm offset */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, np->bdBase & ~PAGE_OFFSET );
 
 	printk(KERN_INFO MEN_Z77_DRV_NAME "register 16Z087 as %s mode %d phys.addr 0x%08x irq 0x%x \n",
 		   dev->name, mode[np->instCount], (u32)phys_addr, chu->irq );
@@ -2743,10 +2485,9 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	/* set up timer to poll for link state changes */
 	init_timer(&np->timer);
-	np->timer.expires 	= jiffies + np->timer_offset;
+	np->timer.expires 	= jiffies + CONFIG_HZ / 2;
 	np->timer.data 		= (unsigned long)dev;
 	np->timer.function 	= z77_timerfunc;
-
 
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
@@ -2810,18 +2551,14 @@ err_free_reg:
  */
 static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 {
-
 	struct net_device *dev = (struct net_device *)chu->driver_data;
 	struct z77_private *np = netdev_priv(dev);
-	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove" );
+	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove\n" );
 
-	/* remove the work queue */
+	netif_napi_del(&np->napi);
 	cancel_work_sync(&np->reset_task);
+	dma_free_coherent(&chu->pdev->dev, PAGE_SIZE, np->bdBase, np->bdPhys );
 	unregister_netdev(dev);
-
-	/* free the allocated DMA space */
-	
-	kfree((void*)np->bdBase);
 	return 0;
 }
 
@@ -2924,5 +2661,3 @@ module_exit(men_16z077_cleanup);
 MODULE_LICENSE( "GPL" );
 MODULE_DESCRIPTION( "MEN Ethernet IP Core driver" );
 MODULE_AUTHOR("thomas.schnuerer@men.de");
-
-#endif /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,29) */

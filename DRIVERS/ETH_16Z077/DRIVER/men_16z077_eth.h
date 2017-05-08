@@ -104,7 +104,7 @@
 #define Z77_USE_VLAN_TAGGING
 #endif
 
-#define MEN_Z77_DRV_NAME  "MEN ETH driver:"
+#define MEN_Z77_DRV_NAME  "MEN ETH: "
 
 /**
  * @defgroup _Z077MACS board specific MAC offsets 
@@ -126,7 +126,6 @@
 #define MEN_P511				511
 #define MEN_P513				513
 /*@}*/
-
 
 /**
  * @defgroup _Z077BASES Important basic defines for following Macros
@@ -231,85 +230,51 @@
    \endverbatim
  */
 /*@{*/
-#define Z077_SET_TBD_ADDR(n,adr) \
-		Z77WRITE_D32(Z077_BDBASE, \
-        Z077_BD_OFFS+(((n)+TBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR, (adr))
+#define Z077_SET_TBD_ADDR(n,adr) Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+(((n)+TBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR, (adr))
 /*!< set Tx BD Address for Tx BD nr. (n) */
 
-#define Z077_SET_RBD_ADDR(n,adr) \
-		Z77WRITE_D32(Z077_BDBASE, \
-        Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+ Z077_BD_OFFS_ADR, adr)
+#define Z077_SET_RBD_ADDR(n,adr) Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+ Z077_BD_OFFS_ADR, adr)
 /*!< set Rx BD Address for Rx BD nr. (n) */
 
-#define Z077_GET_RBD_ADDR(n) \
-		Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + \
-        ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
+#define Z077_GET_RBD_ADDR(n) 	 Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
 /*!< get Rx BD Address for Rx BD nr. (n) */
 
-#define Z077_GET_TBD_ADDR(n) \
-		Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + \
-        ( ((n)+TBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_ADR)
+#define Z077_GET_TBD_ADDR(n)  	 Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+TBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_ADR)
 /*!< get Tx BD Address of ETH Frame of Tx BD nr. (n) */
 
-#define Z077_SET_TBD_FLAG(n,f) \
-		Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE), \
-        Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE))| \
-        (f) )
+#define Z077_SET_TBD_FLAG(n,f)   Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE), \
+											  Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE))| (f) )
 /*!< set flag f of Tx BD nr. (n) */
-
-#define Z077_SET_RBD_FLAG(n,f) \
-	    Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
-        Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE)|\
-        (f) )
+#define Z077_SET_RBD_FLAG(n,f)   Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
+											  Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE)| (f) )
 /*!< set flag f of Rx BD nr. (n) */
-
-#define Z077_CLR_TBD_FLAG(n,f) \
-	 Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE),\
-     Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE)) &\
-	 ~(f) )
+#define Z077_CLR_TBD_FLAG(n,f)   Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE),\
+											  Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE)) &	~(f) )
 /*!< clear flag f of Tx BD nr. (n) */
 
-#define Z077_CLR_RBD_FLAG(n,f) \
-	  Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
-      Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE) &\
-      ~(f) )
+#define Z077_CLR_RBD_FLAG(n,f)   Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
+											  Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE) & ~(f) )
 /*!< clear flag f of Rx BD nr. (n) */
 
-#define Z077_GET_RBD_FLAG(n,f) \
-       (Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+RBD_OFF)*Z077_BDSIZE)) &\
-       (f) )
+#define Z077_GET_RBD_FLAG(n,f)  (Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+RBD_OFF)*Z077_BDSIZE)) & (f) )
 /*!< get flag f of Rx BD nr. (n) */
 
-
-#define Z077_GET_TBD_FLAG(n,f) \
-       (Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE)) &\
-       (f) )
+#define Z077_GET_TBD_FLAG(n,f)  (Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE)) & (f) )
 /*!< get TBD Flag f of Tx BD nr. (n) */
 
-
-#define Z077_SET_TBD_LEN(n,l) Z77WRITE_D16(Z077_BDBASE, \
-        Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE), (l));
+#define Z077_SET_TBD_LEN(n,l) Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE), (l));
 /*!< set ETH Frame length for Tx BD nr. (n) */
 
-
-#define Z077_GET_TBD_LEN(n) Z77READ_D16(Z077_BDBASE, \
-        Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE))
+#define Z077_GET_TBD_LEN(n) Z77READ_D16(Z077_BDBASE,    Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE))
 /*!< Get ETH Frame length for Tx BD nr. (n) */
 
-
-#define Z077_GET_RBD_LEN(n)  Z77READ_D16(Z077_BDBASE, \
-	    Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_LEN )
+#define Z077_GET_RBD_LEN(n)  Z77READ_D16(Z077_BDBASE,   Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_LEN )
 /*!< retrieve the length stored in Rx BD nr. (n) */
 
-
-#define Z077_CLR_RBD_LEN(n) \
-	    Z77WRITE_D16(Z077_BDBASE, \
-		Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_LEN, 0 );
+#define Z077_CLR_RBD_LEN(n)  Z77WRITE_D16(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_LEN, 0 );
 /*!< clear a Rx BDs len entry after packet is processed */
 
-#define Z077_GET_RBD_ADDR(n) \
-		Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + \
-        ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
+#define Z077_GET_RBD_ADDR(n) Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
 /*!< get the address of ETH Frame of Rx BD (n) */
 
 #define Z077_RBD_EMPTY(n) Z077_GET_RBD_FLAG((n), OETH_RX_BD_EMPTY)
@@ -559,18 +524,10 @@
 
 
 /* Cache macros */
-#if 0
-# define Z77WRITE_D32(ma,offs,val) 		MWRITE_D32(ma,offs,val)
-# define Z77WRITE_D16(ma,offs,val) 		MWRITE_D16(ma,offs,val)
-# define Z77READ_D32(ma,offs) 	 		MREAD_D32(ma,offs)
-# define Z77READ_D16(ma,offs) 	 		MREAD_D16(ma,offs)
-#else
-# define Z77WRITE_D32(ma,offs,val) 		writel(val, (void*)(ma+offs))
-# define Z77WRITE_D16(ma,offs,val) 		writew(val, (void*)(ma+offs))
-# define Z77READ_D32(ma,offs) 	 		readl((void*)(ma+offs))
-# define Z77READ_D16(ma,offs) 	 		readw((void*)(ma+offs))
-#endif
-
+#define Z77WRITE_D32(ma,offs,val) 		writel(val, (void*)(ma+offs))
+#define Z77WRITE_D16(ma,offs,val) 		writew(val, (void*)(ma+offs))
+#define Z77READ_D32(ma,offs) 	 		readl((void*)(ma+offs))
+#define Z77READ_D16(ma,offs) 	 		readw((void*)(ma+offs))
 
 /**
  * @defgroup _MACRO0 Macros acting on Registers within the IP Core
