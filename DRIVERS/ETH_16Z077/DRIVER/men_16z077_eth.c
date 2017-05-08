@@ -2,7 +2,7 @@
 /*!
  *        \file  men_16z077_eth.c
  *      \author  thomas.schnuerer@men.de
- *        $Date: 2017/03/21 $
+ *        $Date: 2017/05/08 $
  *
  *        \brief driver for IP core 16Z087 (Ethernet cores).
  *               supports kernel 3.0 to 4.8
@@ -125,12 +125,6 @@
 #error EP05 no longer supported
 #endif
 
-/* Macro for debugging with ethtool -s ethX msglvl <n>. n=0 (no debugs)-3 (very verbose + IRQ messages, use with care)
-   printk rate limitation can be controlled from user space:
-   values in /proc/sys/kernel/printk_ratelimit and 
-             /proc/sys/kernel/printk_ratelimit_burst are the # of seconds to wait before re-enabling messages 
-			 and the number of messages accepted before ratelimiting.
- */
 #ifdef DBG
 #define Z77DBG(lvl,msg...) 	  if (np->msg_enable >= lvl)	   \
 										 printk( msg );
@@ -188,7 +182,6 @@ struct z77_private {
 # define VLAN_ETHER_TYPE 	0x8100
 #endif
 	u8					mcast_lst[MAX_MCAST_LST][MAC_ADDR_LEN]; /*!< store Mcast addrs	*/
-	u32  				coreRev;			/*!< Z87 revision (1=with Rx count)			*/
 	Z077_BD				txBd[Z077_TBD_NUM];	/*!< Tx Buffer Descriptor address 			*/
 	Z077_BD				rxBd[Z077_RBD_NUM]; /*!< Rx Buffer Descriptor address 			*/
 	struct net_device_stats stats;			/*!< status flags to report to IP 			*/
@@ -2069,35 +2062,39 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[4] = ( mac0reg >> 8  ) & 0xff;
 		mac[5] = ( mac0reg >> 0  ) & 0xff;
 		if ( is_valid_ether_addr( mac )) {
-			printk(KERN_INFO "current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+			printk(KERN_INFO "current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n", 
+				   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 			memcpy(dev->dev_addr, mac, 6);
 			goto cont_init;
 		}
 
 		/* 2. initial MAC wasn't valid, check for attached MAC EEPROM */
-		printk(KERN_INFO "current MAC %02x:%02x:%02x:%02x:%02x:%02x is invalid, try get one from an attached MAC EEPROM.\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+		printk(KERN_INFO "current MAC %02x:%02x:%02x:%02x:%02x:%02x is invalid, try get one from an attached MAC EEPROM.\n", 
+			   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 		for (i=0; i < 6; i++ )
 			mac[i] = z77_read_byte_data( dev, i+1 );
 
 		if ( is_valid_ether_addr(mac) ) {
-			printk(KERN_INFO "got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+			printk(KERN_INFO "got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n", 
+				   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 			memcpy(dev->dev_addr, mac, 6);
 			z77_store_mac( dev );
 			goto cont_init;
 		}
-		printk(KERN_INFO "MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM is invalid or no MAC EEPROM attached, try get one from Board ID EEPROM.\n", 
+		printk(KERN_INFO "MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM is invalid or no MAC EEPROM attached,"
+			   " try get one from Board ID EEPROM.\n", 
 			   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 
 		/* 3. no MAC EEPROM found or content invalid, check for board Ident EEPROM */
 		if ( z77_get_mac_from_board_id(mac)) {
 			if ( is_valid_ether_addr(mac) ) {
-				printk(KERN_INFO "got MAC %02x:%02x:%02x:%02x:%02x:%02x from Board ID EEPROM, assigning it.\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+				printk(KERN_INFO "got MAC %02x:%02x:%02x:%02x:%02x:%02x from Board ID EEPROM, assigning it.\n", 
+					   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 				memcpy(dev->dev_addr, mac, 6);
 				z77_store_mac( dev );
 				goto cont_init;
 			}
 		}
- 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
 		printk(KERN_INFO "MAC from BOARD EEPROM is invalid or no board EEPROM found. Resorting to random MAC.\n" );
 		eth_hw_addr_random( dev );
@@ -2119,7 +2116,8 @@ cont_init:
 	moder = Z77READ_D32( Z077_BASE, Z077_REG_MODER );
 	moder |= OETH_MODER_IFG | OETH_MODER_EXDFREN | OETH_MODER_CRCEN | OETH_MODER_BRO | OETH_MODER_PAD | OETH_MODER_RECSMALL;
 	
-	if ( ((np->mii_if.full_duplex) || ((mode[np->instCount] == phymode_10fd ) || (mode[np->instCount] == phymode_10fd))) &&	 (moder & OETH_MODER_HD_AVAL)) {
+	if ( ((np->mii_if.full_duplex) || ((mode[np->instCount] == phymode_10fd ) || \
+									   (mode[np->instCount] == phymode_10fd))) &&	 (moder & OETH_MODER_HD_AVAL)) {
 		moder |= OETH_MODER_FULLD;
 	} 
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MODER, moder);
@@ -2401,12 +2399,10 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	printk(KERN_INFO MEN_Z77_DRV_NAME "initial debug level %d\n", np->msg_enable );
 
-	/* Init bdBase and IP core related stuff depending on found core */
 	np->modCode = chu->modCode;
 
 	/* get a coherent DMAable memory region for the BDs to have the 64 Rx/Tx BD stati in sync with IP core */
 	memVirtDma = dma_alloc_coherent( &chu->pdev->dev, PAGE_SIZE, &memPhysDma, GFP_KERNEL );
-	/* dma_map_single( &chu->pdev->dev, memVirtDma, (size_t)Z77_ETHBUF_SIZE, DMA_BIDIRECTIONAL ); */
 	printk( KERN_INFO MEN_Z77_DRV_NAME " dma_alloc_coherent BD table memory @ CPU addr 0x%p, DMA addr 0x%p\n", memVirtDma, memPhysDma);
 	memset((char*)(memVirtDma), 0, PAGE_SIZE);
 
@@ -2429,16 +2425,8 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* ok so far, store dev in Chameleon units driver_data for removal */
 	chu->driver_data = (void*)dev;
 
-	/* Check if its a 'new' Z87 (better would be an own IP core though..) */
-	if ( Z77READ_D32( dev->base_addr, Z077_REG_RXBDSTAT ) & REG_RXSTAT_REV ) {
-		np->coreRev = 1;
-	} else {
-		np->coreRev = 0;
-	}
-
 	/* force new interrupt behavior */
 	Z77WRITE_D32( dev->base_addr, Z077_REG_COREREV, Z77READ_D32(dev->base_addr, Z077_REG_COREREV) | REG_COREREV_IRQNEWEN );
-
 	if( !(Z77READ_D32(dev->base_addr, Z077_REG_COREREV)
 		  & REG_COREREV_IRQNEWEN) ) {
 		printk(KERN_WARNING "%s: Couldn't set to new IRQ behavior\n", __func__);
@@ -2515,7 +2503,6 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 	struct net_device *dev = (struct net_device *)chu->driver_data;
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove\n" );
-
 	netif_napi_del(&np->napi);
 	cancel_work_sync(&np->reset_task);
 	dma_free_coherent(&chu->pdev->dev, PAGE_SIZE, np->bdBase, np->bdPhys );
@@ -2601,7 +2588,8 @@ static int __init men_16z077_init(void)
 			printk(KERN_ERR "*** invalid phyadr[%d] = %d, must be 0..31 !\n", i, phyadr[i] );
 			goto errout;
 		}
-		if ( (mode[i] != phymode_auto) && (mode[i] != phymode_10hd) && (mode[i] != phymode_10fd) && (mode[i] != phymode_100hd) && ((mode[i] != phymode_100fd))) {
+		if ( (mode[i] != phymode_auto) && (mode[i] != phymode_10hd) && (mode[i] != phymode_10fd) && 
+			 (mode[i] != phymode_100hd) && ((mode[i] != phymode_100fd))) {
 			printk(KERN_ERR "*** invalid phyadr[%d] = %d, must be 0..31 !\n", i, phyadr[i] );
 			goto errout;
 		}
