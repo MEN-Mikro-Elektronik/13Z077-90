@@ -3,16 +3,15 @@
  *        \file  men_16z077_eth.c
  *      \author  thomas.schnuerer@men.de
  *        $Date: 2017/03/21 $
- *    $Revision: 1.45 $
  *
  *        \brief driver for IP core 16Z087 (Ethernet cores).
- *               supports kernel 2.6 and 3.x
+ *               supports kernel 3.0 to 4.8
  *
  *     Switches:
  */
 /*-------------------------------[ History ]---------------------------------
  *
- * end of cvs source control. Latest CVS logmessage was:
+ * git controlled file. Latest CVS logmessage was:
  * Revision 1.45  2014/07/16 19:30:45  ts
  * R: 1. Compilerwarning: incompatible pointer type of .ndo_vlan_rx_add_vid
  *    2. several compilerwarnings about typecasts with gcc 4.8, kernel 3.14
@@ -24,16 +23,16 @@
  ****************************************************************************/
 /* 
  *  This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 2 of the License, or
- *   (at your option) any later version.
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 2 of the License, or
+ *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
+ *  GNU General Public License for more details.
  *
- *   You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -1693,10 +1692,10 @@ static int z77_poll(struct napi_struct *napi, int budget)
 		}
 	} 
 		
-	if ( nrframes < budget ) { /* we are done, for now */
+	if ( nrframes < budget ) { 
+		/* we are done, for now */
 		napi_complete(napi);
 		Z077_ENABLE_IRQ( OETH_INT_RXF );
-        smp_mb();
 	}
 	return nrframes;
 }
@@ -1810,7 +1809,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	dma_handle = dma_map_single( &pcd->dev, (void*)(np->txBd[idxTx].BdAddr), Z77_ETHBUF_SIZE, DMA_TO_DEVICE );
 	np->txBd[idxTx].hdlDma = dma_handle;
 	Z077_SET_TBD_ADDR( idxTx, dma_handle);
-	smp_mb();
 	src 	= (u8*)buf;
 	dst 	= (u8*)np->txBd[idxTx].BdAddr;
 	frm_len = skb->len;
@@ -1839,7 +1837,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 #endif
 
 	Z077_SET_TBD_LEN(  idxTx, frm_len );
-	smp_mb();
 
 	/* very verbose debugging on? then dump sent frame */
 	if ( np->msg_enable >= ETHT_MESSAGE_LVL3 ) {
@@ -1869,9 +1866,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 
 	/* sync BD buffer for write to device */
 	dma_sync_single_for_device( &pcd->dev, np->bdPhys, PAGE_SIZE, DMA_TO_DEVICE);
-
-
-	smp_mb();
 
 	/* dev->trans_start = jiffies; */
 	np->stats.tx_bytes += skb->len;
@@ -2305,30 +2299,9 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 
 	if (status & OETH_INT_RXF) { 			/* Got a packet. */
 		Z077_DISABLE_IRQ( OETH_INT_RXF ); 	/* reenabled in NAPI poll routine */
-        mb();
-		Z077_DISABLE_IRQ( OETH_INT_RXF ); 	/* reenabled in NAPI poll routine */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-        mb();
-		/* sync BD buffer for write to device */
 		napi_schedule(&np->napi);
 	}
-	
 
 	if (status & OETH_INT_TXB) { 	/* Transmit complete. */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
@@ -2340,7 +2313,6 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	}
 
 	if (status & OETH_INT_TXE) {  	/* handle Tx Error */
-		/* acknowledge all IRQs except RXF (leave it asserted until current NAPI poll cycle is finished) */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx_err(dev);
 	}
@@ -2384,33 +2356,22 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	dma_addr_t memPhysDma;
 	void *     memVirtDma = NULL;
 
-
 	dev = alloc_etherdev(sizeof(struct z77_private));
 	if (!dev)
 		return -ENOMEM;
 
-	/* enable bus mastering and set DMA mask for this driver */
+	/* enable bus mastering and DMA mask for this driver */
 	pci_set_master( chu->pdev );
-#if 0
-	if ( dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(64))) {
-		printk(KERN_INFO MEN_Z77_DRV_NAME " can't set 64bit DMA mask, try 32bit.\n");
-		if (dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(32))) {
-			printk(KERN_ERR MEN_Z77_DRV_NAME " can't set 32bit DMA mask, aborting\n");
-			goto err_free_reg;
-		} else
-			printk(KERN_INFO MEN_Z77_DRV_NAME " using 32bit DMA mask\n");
-	} else
-		printk(KERN_INFO MEN_Z77_DRV_NAME " using 64bit DMA mask\n");
-#else
-	if (dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(32))) {
-		printk(KERN_ERR MEN_Z77_DRV_NAME " can't set 32bit DMA mask, aborting\n");
+
+	/* this driver support 32bit PCI core/registers yet so make sure we get
+	   DMAable memory from that range. Should one day 64bit IP cores arrive the bit mask
+	   can be set to 64. */
+	if ( dma_set_mask_and_coherent(&chu->pdev->dev, DMA_BIT_MASK(32)) ) {
+		printk(KERN_ERR MEN_Z77_DRV_NAME "can't set 32bit DMA mask, aborting\n");
 		goto err_free_reg;
 	}
-#endif
 
 	phys_addr = pci_resource_start(chu->pdev, chu->bar) + chu->offset;
-
-	/* base_addr is complete range from MODER to Rx Ring end  */
 	dev->base_addr = (unsigned long)ioremap_nocache(phys_addr, (u32)Z77_CFGREG_SIZE );
 	dev->irq       = chu->irq;
 
@@ -2427,7 +2388,6 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	netif_napi_add( dev, &np->napi, z77_poll, Z077_WEIGHT );
 	np->dev = dev;
 
-
 	/* store Z87 instance to set its PHY address later, chu->instance starts @ 0 for every FPGA */
 	np->instance  = chu->instance;
 	np->instCount = G_globalInstanceCount;
@@ -2439,7 +2399,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* pass initial debug level */
 	np->msg_enable = (dbglvl > Z77_MAX_MSGLVL) ? Z77_MAX_MSGLVL : dbglvl;
 
-	printk(KERN_INFO MEN_Z77_DRV_NAME " initial debug level %d\n", np->msg_enable );
+	printk(KERN_INFO MEN_Z77_DRV_NAME "initial debug level %d\n", np->msg_enable );
 
 	/* Init bdBase and IP core related stuff depending on found core */
 	np->modCode = chu->modCode;
@@ -2447,9 +2407,10 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	/* get a coherent DMAable memory region for the BDs to have the 64 Rx/Tx BD stati in sync with IP core */
 	memVirtDma = dma_alloc_coherent( &chu->pdev->dev, PAGE_SIZE, &memPhysDma, GFP_KERNEL );
 	/* dma_map_single( &chu->pdev->dev, memVirtDma, (size_t)Z77_ETHBUF_SIZE, DMA_BIDIRECTIONAL ); */
-	printk( KERN_INFO "dma_alloc_coherent: memVirtDma = %p, memPhysDma = %p\n", memVirtDma, memPhysDma);
+	printk( KERN_INFO MEN_Z77_DRV_NAME " dma_alloc_coherent BD table memory @ CPU addr 0x%p, DMA addr 0x%p\n", memVirtDma, memPhysDma);
 	memset((char*)(memVirtDma), 0, PAGE_SIZE);
-	/* Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, np->bdBase & ~PAGE_OFFSET ); */
+
+	/* store for dma_free_coherent at module remove */
 	np->bdBase = memVirtDma;
 	np->bdPhys = memPhysDma;
 	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, memPhysDma );
