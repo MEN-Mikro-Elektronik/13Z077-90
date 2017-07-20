@@ -72,26 +72,43 @@
 /* max. # of supported Z87 Instances in the system */
 #define NR_ETH_CORES_MAX	8
 /* timeout to wait for reply from MII */
-#define MII_ACCESS_TIMEOUT 	10000
+#define MII_ACCESS_TIMEOUT	10000
 /*  max. loops to wait for Idle condition */
-#define IP_CORE_TIMEOUT 	200
+#define IP_CORE_TIMEOUT		200
 #define PHY_MAX_ADR		31
-#define MAX_MCAST_LST		64		/* we store up to 64 addresses */
-#define MAC_ADDR_LEN		6		/* MAC len in byte */
-#define MCAST_HASH_POLYNOM  	0x04C11DB7	/* CRC32 polynom for hash calculation */
-#define MCAST_HASH_CRC_SEED 	0xFFFFFFFF	/* initial polynom seed */
-#define MCAST_MULT_SHFT 	26		/* bit shift to calculate hash bin */
-#define MCAST_HASH_MASK		0x3f    	/* pass up only lower 6 bit */
-#define LEN_CRC			4		/* additional CRC bytes present in Frames */
-#define I2C_MAX_ADAP_CNT	16		/* max. # of I2C adapters to query ID EEPROM */
-#define MEN_BRDID_EE_ADR   	0x57		/* ID EEPROM address on F1x cards = 0x57 */
-#define ID_EE_NAME_OFF 		9		/* board name offset in ID EEPROM */
-#define MEN_BRDID_EE_MAC_OF 	0x90		/* begin of MAC(s) in Board ID EEPROM */
-#define ID_EE_NAME_LEN		6		/* length of name in ID EEPROM */
-#define RX_BD_ALL_FULL 		(0xffffffff)
+/* we store up to 64 addresses */
+#define MAX_MCAST_LST		64
+/* MAC len in byte */
+#define MAC_ADDR_LEN		6
+/* CRC32 polynom for hash calculation */
+#define MCAST_HASH_POLYNOM	0x04C11DB7
+/* initial polynom seed */
+#define MCAST_HASH_CRC_SEED	0xFFFFFFFF
+/* bit shift to calculate hash bin */
+#define MCAST_MULT_SHFT		26
+/* pass up only lower 6 bit */
+#define MCAST_HASH_MASK		0x3f
+/* additional CRC bytes present in Frames */
+#define LEN_CRC			4
+/* max. # of I2C adapters to query ID EEPROM */
+#define I2C_MAX_ADAP_CNT	16
+/* ID EEPROM address on F1x cards = 0x57 */
+#define MEN_BRDID_EE_ADR	0x57
+/* board name offset in ID EEPROM */
+#define ID_EE_NAME_OFF		9
+/* begin of MAC(s) in Board ID EEPROM */
+#define MEN_BRDID_EE_MAC_OF	0x90
+/* length of name in ID EEPROM */
+#define ID_EE_NAME_LEN		6
+#define RX_BD_ALL_FULL		(0xffffffff)
 
 /* all used IRQs on the Z87 */
-#define Z077_IRQ_ALL 	(OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE | OETH_INT_BUSY | OETH_INT_TXB)
+#define Z077_IRQ_ALL    \
+	( OETH_INT_TXE  \
+	| OETH_INT_RXF  \
+	| OETH_INT_RXE  \
+	| OETH_INT_BUSY \
+	| OETH_INT_TXB  )
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
@@ -101,25 +118,26 @@
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-# define Z87_VLAN_FEATURES    	(NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX)
+# define Z87_VLAN_FEATURES (NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX)
 #else
-# define Z87_VLAN_FEATURES    	(NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
+# define Z87_VLAN_FEATURES (NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0)
-# define vlan_tag_present_func(x) 	vlan_tx_tag_present(x)
-# define vlan_tag_get_func(x) 		vlan_tx_tag_get(x)
+# define vlan_tag_present_func(x)	vlan_tx_tag_present(x)
+# define vlan_tag_get_func(x)		vlan_tx_tag_get(x)
 #else
-# define vlan_tag_present_func(x) 	skb_vlan_tag_present(x)
-# define vlan_tag_get_func(x) 		skb_vlan_tag_get(x)
+# define vlan_tag_present_func(x)	skb_vlan_tag_present(x)
+# define vlan_tag_get_func(x)		skb_vlan_tag_get(x)
 #endif
 
 #ifdef NIOS_II
-# error NIOS_II (non-MMU driver) not longer supported. Use older driver if needed!
+# error NIOS_II (no-MMU) no longer supported. Use older driver if needed!
 #endif
-
-#define VLAN_TAG_SIZE		4	/* how much longer VLAN frames are */
-#define ETH_SRCDST_MAC_SIZE	12	/* combined length or source and dest MAC addr */
+/* how much longer VLAN frames are */
+#define VLAN_TAG_SIZE		4
+/* combined length or source and dest MAC addr */
+#define ETH_SRCDST_MAC_SIZE	12
 
 #if defined(CONFIG_MENEP05)
 #error EP05 no longer supported
@@ -153,43 +171,75 @@ static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
  */
 /*@{*/
 struct z77_private {
-	long 			open_time;		/*!< how long is device open already */
-    	long	  		flags;			/*!< Our local flags */
-	u32  			instance;		/*!< chameleon instance if more Z87  */
-	u32			phymode;		/*!< chameleon instance if more Z87  */
-	u32  			nstCount;		/*!< global probe cnt. for phyadr[]  */
-	u32			nCurrTbd;		/*!< currently used Tx BD */
-	u32			txIrq;			/*!< last serviced TX IRQ */
-	u32			modCode;		/*!< chameleon modCode */
-	unsigned long		bdBase;			/*!< start address of BDs in RAM */
-	dma_addr_t 		bdPhys;			/*!< DMA address of BDs in RAM */
-	u32 			pollInProgress;
-	u32 			bdOff;			/*!< BDoffset from BAR start */
-	u32 			tbdOff;			/*!< TX Buffer offset to phys base */
-	u32 			rbdOff;			/*!< TX Buffer offset to phys base */
-	u32			serialnr;		/*!< serial nr. of P51x or MM1 */
-	u32			board;			/*!< board identifier of this eth */
-	SMB_DESC_PORTCB 	smb2desc;       	/*!< SMB2 descriptor for EEPROM */
-	void            	*smbHdlP;		/*!< SMB2 Handle */
-	struct work_struct 	reset_task; 		/*!< process context resetting (ndo_tx_timeout) */
-	struct timer_list 	timer;			/*!< period timer for linkchange poll */
-	u32			prev_linkstate;		/*!< previous link state */
+	/*!< how long is device open already */
+	long open_time;
+	/*!< Our local flags */
+	long flags;
+	/*!< chameleon instance if more Z87  */
+	u32  instance;
+	/*!< chameleon instance if more Z87  */
+	u32 phymode;
+	/*!< global probe cnt. for phyadr[]  */
+	u32 nstCount;
+	/*!< currently used Tx BD */
+	u32 nCurrTbd;
+	/*!< last serviced TX IRQ */
+	u32 txIrq;
+	/*!< chameleon modCode */
+	u32 modCode;
+	/*!< start address of BDs in RAM */
+	unsigned long bdBase;
+	/*!< DMA address of BDs in RAM */
+	dma_addr_t bdPhys;
+	u32 pollInProgress;
+	/*!< BDoffset from BAR start */
+	u32 bdOff;
+	/*!< TX Buffer offset to phys base */
+	u32 tbdOff;
+	/*!< TX Buffer offset to phys base */
+	u32 rbdOff;
+	/*!< serial nr. of P51x or MM1 */
+	u32 serialnr;
+	/*!< board identifier of this eth */
+	u32 board;
+	/*!< SMB2 descriptor for EEPROM */
+	SMB_DESC_PORTCB smb2desc;
+	/*!< SMB2 Handle */
+	void *smbHdlP;
+	/*!< process context resetting (ndo_tx_timeout) */
+	struct work_struct reset_task;
+	/*!< period timer for linkchange poll */
+	struct timer_list timer;
+	/*!< previous link state */
+	u32 prev_linkstate;
 #if defined(Z77_USE_VLAN_TAGGING)
-	struct vlan_group	*vlgrp; 		/*!< VLAN tagging group */
-	u32			err_vlan;		/*!< VLAN error flags/count */
+	/*!< VLAN tagging group */
+	struct vlan_group *vlgrp;
+	/*!< VLAN error flags/count */
+	u32 err_vlan;
 # define RXD_VLAN_MASK		0x0000ffff
-# define VLAN_ETHER_TYPE 	0x8100
+# define VLAN_ETHER_TYPE	0x8100
 #endif
-	u8			mcast_lst[MAX_MCAST_LST][MAC_ADDR_LEN]; /*!< store Mcast addrs	*/
-	Z077_BD			txBd[Z077_TBD_NUM];	/*!< Tx Buffer Descriptor address */
-	Z077_BD			rxBd[Z077_RBD_NUM]; 	/*!< Rx Buffer Descriptor address */
-	struct net_device_stats stats;			/*!< status flags to report to IP */
-	spinlock_t 		lock;			/*!< prevent concurrent accesses */
-	struct pci_dev		*pdev;			/*!< the pci device we belong to */
-	struct mii_if_info 	mii_if;			/*!< MII API hooks, info */
-	u32 			msg_enable;		/*!< debug message level */
-	struct napi_struct 	napi;       		/*!< NAPI struct */
-	struct net_device  	*dev;       		/*!< net device */
+	/*!< store Mcast addrs	*/
+	u8 mcast_lst[MAX_MCAST_LST][MAC_ADDR_LEN];
+	/*!< Tx Buffer Descriptor address */
+	Z077_BD	txBd[Z077_TBD_NUM];
+	/*!< Rx Buffer Descriptor address */
+	Z077_BD rxBd[Z077_RBD_NUM];
+	/*!< status flags to report to IP */
+	struct net_device_stats stats;
+	/*!< prevent concurrent accesses */
+	spinlock_t lock;
+	/*!< the pci device we belong to */
+	struct pci_dev *pdev;
+	/*!< MII API hooks, info */
+	struct mii_if_info mii_if;
+	/*!< debug message level */
+	u32 msg_enable;
+	/*!< NAPI struct */
+	struct napi_struct napi;
+	/*!< net device */
+	struct net_device *dev;
 };
 /*@}*/
 
@@ -227,6 +277,7 @@ static void z77_timerfunc(unsigned long);
 
 /* filled depending on found IP core, either "16Z077" or "16Z087" */
 static char cardname[16];
+
 static const char *version = "$Id: men_16z077_eth.c,v 1.45 2014/07/16 19:30:45 ts Exp $";
 
 /* helper for description of phy advertised/supported capabilities*/
@@ -250,11 +301,11 @@ static const char *phycaps[] =
 };
 
 enum phymodes {
- 	phymode_auto,		/* 0 */
- 	phymode_10hd,		/* 1 */
- 	phymode_10fd,		/* 2 */
- 	phymode_100hd,		/* 3 */
- 	phymode_100fd		/* 4 */
+	phymode_auto,		/* 0 */
+	phymode_10hd,		/* 1 */
+	phymode_10fd,		/* 2 */
+	phymode_100hd,		/* 3 */
+	phymode_100fd		/* 4 */
 };
 
 /* global to count detected instances */
@@ -270,7 +321,7 @@ static int phyadr[NR_ETH_CORES_MAX]    = {0,0,0,0,0,0,0,0};
 static int mode[NR_ETH_CORES_MAX]      = {0,0,0,0,0,0,0,0};
 
 module_param_array(mode, int, (void*)&nrcores, 0664);
-MODULE_PARM_DESC(mode, " 0=autoneg 1=10MbitHD 2=10MbitFD 3=100MbitHD 4=100MbitFD   example: mode=4,0,0");
+MODULE_PARM_DESC(mode, " 0=autoneg 1=10MbitHD 2=10MbitFD 3=100MbitHD 4=100MbitFD ex.: mode=4,0,0");
 module_param_array(phyadr, int, (void*)&nrcores, 0664 );
 MODULE_PARM_DESC(phyadr, " address of PHY#n connected to each Z87 unit. example: phyadr=1,2,0");
 module_param(dbglvl, int, 0664 );
@@ -279,25 +330,25 @@ MODULE_PARM_DESC(dbglvl, " 0=none 1=basic 2=verbose 3=very verbose (dumps every 
 /* helper to keep Register descriptions in a comfortable struct */
 const Z077_REG_INFO z77_reginfo[] = {
 	{"MODER     ", Z077_REG_MODER		},
-	{"INT_SRC   ", Z077_REG_INT_SRC 	},
-	{"INT_MASK  ", Z077_REG_INT_MASK 	},
-	{"IPGT      ", Z077_REG_IPGT 		},
-	{"IPGR1     ", Z077_REG_IPGR1 		},
-	{"IPGR2     ", Z077_REG_IPGR2 		},
-	{"PACKLEN   ", Z077_REG_PACKLEN 	},
-	{"COLLCONF  ", Z077_REG_COLLCONF 	},
-	{"TX_BDNUM  ", Z077_REG_TX_BDNUM 	},
-	{"CTRLMODER ", Z077_REG_CTRLMODER 	},
-	{"MIIMODER  ", Z077_REG_MIIMODER 	},
-	{"MIICMD    ", Z077_REG_MIICMD 		},
-	{"MIIADR    ", Z077_REG_MIIADR 		},
-	{"MIITX_DATA", Z077_REG_MIITX_DATA 	},
-	{"MIIRX_DATA", Z077_REG_MIIRX_DATA 	},
-	{"MIISTATUS ", Z077_REG_MIISTATUS 	},
-	{"MAC_ADDR0 ", Z077_REG_MAC_ADDR0 	},
+	{"INT_SRC   ", Z077_REG_INT_SRC		},
+	{"INT_MASK  ", Z077_REG_INT_MASK	},
+	{"IPGT      ", Z077_REG_IPGT		},
+	{"IPGR1     ", Z077_REG_IPGR1		},
+	{"IPGR2     ", Z077_REG_IPGR2		},
+	{"PACKLEN   ", Z077_REG_PACKLEN		},
+	{"COLLCONF  ", Z077_REG_COLLCONF	},
+	{"TX_BDNUM  ", Z077_REG_TX_BDNUM	},
+	{"CTRLMODER ", Z077_REG_CTRLMODER	},
+	{"MIIMODER  ", Z077_REG_MIIMODER	},
+	{"MIICMD    ", Z077_REG_MIICMD		},
+	{"MIIADR    ", Z077_REG_MIIADR		},
+	{"MIITX_DATA", Z077_REG_MIITX_DATA	},
+	{"MIIRX_DATA", Z077_REG_MIIRX_DATA	},
+	{"MIISTATUS ", Z077_REG_MIISTATUS	},
+	{"MAC_ADDR0 ", Z077_REG_MAC_ADDR0	},
 	{"MAC_ADDR1 ", Z077_REG_MAC_ADDR1	},
-	{"HASH_ADDR0", Z077_REG_HASH_ADDR0 	},
-	{"HASH_ADDR1", Z077_REG_HASH_ADDR1 	},
+	{"HASH_ADDR0", Z077_REG_HASH_ADDR0	},
+	{"HASH_ADDR1", Z077_REG_HASH_ADDR1	},
 	{"TXCTRL    ", Z077_REG_TXCTRL		},
 	{"GLOBAL RST", Z077_REG_GLOBALRST	},
 	{"BD_START  ", Z077_REG_BDSTART		},
@@ -306,8 +357,8 @@ const Z077_REG_INFO z77_reginfo[] = {
 	{"TX_EMPTY0 ", Z077_REG_TXEMPTY0	},
 	{"TX_EMPTY1 ", Z077_REG_TXEMPTY1	},
 	{"RX_BDSTAT ", Z077_REG_RXBDSTAT	},
-	{"SMBCTRL   ", Z077_REG_SMBCTRL  	},
-	{"COREREV   ", Z077_REG_COREREV  	},
+	{"SMBCTRL   ", Z077_REG_SMBCTRL		},
+	{"COREREV   ", Z077_REG_COREREV		},
 	{"RXERRCNT1 ", Z077_REG_RXERRCNT1	},
 	{"RXERRCNT2 ", Z077_REG_RXERRCNT2	},
 	{"TXERRCNT1 ", Z077_REG_TXERRCNT1	},
@@ -583,7 +634,7 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_do_ioctl		= z77_ioctl,
 	.ndo_get_stats		= z77_get_stats,
 	.ndo_tx_timeout		= z77_tx_timeout,
-	.ndo_set_rx_mode 	= z77_set_rx_mode,
+	.ndo_set_rx_mode	= z77_set_rx_mode,
 	.ndo_change_mtu		= z77_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= z77_set_mac_address,
@@ -703,7 +754,7 @@ static int z77_regdump( struct net_device *dev )
 {
 	u32 adr	= 0;
 	u32 tmp = 0;
- 	u16 dat = 0;
+	u16 dat = 0;
 
 	unsigned long i = 0;
 	struct z77_private *np = netdev_priv(dev);
@@ -724,7 +775,7 @@ static int z77_regdump( struct net_device *dev )
 	printk( KERN_INFO "current TXBd 0x%02x\n", np->nCurrTbd);
 	printk( KERN_INFO "----- MII Registers -----\n");
 	printk( KERN_INFO "instance\t\t\t0x%02x\n", np->instance );
-	printk( KERN_INFO "PHY ADR\t\t\t0x%02x\n", 	np->mii_if.phy_id );
+	printk( KERN_INFO "PHY ADR\t\t\t0x%02x\n", np->mii_if.phy_id );
 
 	dat = z77_mdio_read(dev, np->mii_if.phy_id, MII_BMCR );
 	printk( KERN_INFO "MII_BMCR\t\t\t0x%04x\n", dat );
@@ -819,9 +870,9 @@ static int z77_regdump( struct net_device *dev )
  */
 static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 {
-	int retVal 			= 0xffff;
+	int retVal = 0xffff;
 	volatile u32 miival = 0;
-	volatile u32 tout 	= MII_ACCESS_TIMEOUT;
+	volatile u32 tout = MII_ACCESS_TIMEOUT;
 
 	/* wait until a previous BUSY disappears */
 	do {
@@ -870,9 +921,10 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 						   int location, int val)
 {
 	volatile u32 miival = 0;
-	volatile u32 tout 	= MII_ACCESS_TIMEOUT;
+	volatile u32 tout = MII_ACCESS_TIMEOUT;
 
-	do { 	/* wait until a previous BUSY disappears */
+	/* wait until a previous BUSY disappears */
+	do {
 		miival = Z77READ_D32(Z077_BASE, Z077_REG_MIISTATUS );
 		tout--;
 	} while( (miival & OETH_MIISTATUS_BUSY) && tout);
@@ -1126,13 +1178,13 @@ static void z77_ethtool_testmode(struct net_device *dev,
  * This structure provides the interface functions to the standard ethtool
  */
 static struct ethtool_ops z77_ethtool_ops = {
-	.get_drvinfo 	= z77_ethtool_get_drvinfo,
-	.get_settings 	= z77_ethtool_get_settings,
-	.set_settings 	= z77_ethtool_set_settings,
-	.nway_reset 	= z77_ethtool_nway_reset,
+	.get_drvinfo	= z77_ethtool_get_drvinfo,
+	.get_settings	= z77_ethtool_get_settings,
+	.set_settings	= z77_ethtool_set_settings,
+	.nway_reset	= z77_ethtool_nway_reset,
 	.get_link	= z77_ethtool_get_link,
-	.get_msglevel 	= z77_ethtool_get_msglevel,
-	.set_msglevel 	= z77_ethtool_set_msglevel,
+	.get_msglevel	= z77_ethtool_get_msglevel,
+	.set_msglevel	= z77_ethtool_set_msglevel,
 	.self_test	= z77_ethtool_testmode,
 };
 
@@ -1495,9 +1547,10 @@ static int z77_phy_init(struct net_device *dev)
 static int z77_phy_identify(struct net_device *dev,u8 phyAddr )
 {
 	u32 i=0;
-    u16	data;		/* data to be written to the control reg */
-	u16	id2;
-    data = z77_mdio_read(dev, phyAddr, MII_PHYSID1 );
+	/* data to be written to the control reg */
+	u16 data;
+	u16 id2;
+	data = z77_mdio_read(dev, phyAddr, MII_PHYSID1 );
 
 	while (z077PhyAttachTbl[i].ident !=0xffff) {
 		if (data == z077PhyAttachTbl[i].ident ) {
@@ -1558,43 +1611,43 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 			__FUNCTION__, phyAddr);
 
 	/* some default settings */
-	cmd.port 		 	= PORT_MII;
-	cmd.transceiver  	= XCVR_INTERNAL;
-	cmd.phy_address  	= phyAddr;
-	cmd.autoneg      	= AUTONEG_DISABLE;
+	cmd.port = PORT_MII;
+	cmd.transceiver = XCVR_INTERNAL;
+	cmd.phy_address = phyAddr;
+	cmd.autoneg = AUTONEG_DISABLE;
 
 	switch ( mode[np->instCount] ) {
 	case phymode_10hd:
-		np->mii_if.full_duplex	=	0;
-		np->mii_if.force_media	=	1;
-		cmd.speed 				= 	SPEED_10;
-		cmd.duplex 				=	DUPLEX_HALF;
+		np->mii_if.full_duplex	= 0;
+		np->mii_if.force_media	= 1;
+		cmd.speed = SPEED_10;
+		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_10fd:
-		np->mii_if.full_duplex	=	1;
-		np->mii_if.force_media	=	1;
-		cmd.speed 				= 	SPEED_10;
-		cmd.duplex 				= 	DUPLEX_FULL;
+		np->mii_if.full_duplex = 1;
+		np->mii_if.force_media = 1;
+		cmd.speed = SPEED_10;
+		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_100hd:
-		np->mii_if.full_duplex	=	0;
-		np->mii_if.force_media	=	1;
-		cmd.speed 				= 	SPEED_100;
-		cmd.duplex 				= 	DUPLEX_HALF;
+		np->mii_if.full_duplex	= 0;
+		np->mii_if.force_media	= 1;
+		cmd.speed = SPEED_100;
+		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_100fd:
-		np->mii_if.full_duplex	=	1;
-		np->mii_if.force_media	=	1;
-		cmd.speed 				= 	SPEED_100;
-		cmd.duplex 				= 	DUPLEX_FULL;
+		np->mii_if.full_duplex	= 1;
+		np->mii_if.force_media	= 1;
+		cmd.speed = SPEED_100;
+		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_auto:
-		np->mii_if.full_duplex	=	1;
-		np->mii_if.force_media	=	0;
-		cmd.speed 				= 	SPEED_100;
-		cmd.duplex 				= 	DUPLEX_FULL;
-		cmd.autoneg 			= 	AUTONEG_ENABLE;
-		bDoAutoneg 				= 	1;
+		np->mii_if.full_duplex	= 1;
+		np->mii_if.force_media	= 0;
+		cmd.speed = SPEED_100;
+		cmd.duplex = DUPLEX_FULL;
+		cmd.autoneg = AUTONEG_ENABLE;
+		bDoAutoneg = 1;
 		break;
 	default:
 		printk(KERN_ERR "*** invalid mode parameter '%d'\n",
@@ -1894,23 +1947,23 @@ static int z77_open(struct net_device *dev)
 static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 {
 
-	struct z77_private *np 	= 	netdev_priv(dev);
-	struct pci_dev *pcd 	=   np->pdev;
-	unsigned char 	*buf 	= 	skb->data;
-	u32 txbEmpty 			= 	0;
+	struct z77_private *np = netdev_priv(dev);
+	struct pci_dev *pcd = np->pdev;
+	unsigned char *buf = skb->data;
+	u32 txbEmpty = 0;
 #if defined(Z77_USE_VLAN_TAGGING)
-	unsigned int vlan_id	= 	0;
-	unsigned int vlan_tag	=   0;
+	unsigned int vlan_id = 0;
+	unsigned int vlan_tag = 0;
 #endif
-	unsigned int frm_len	=   0;
-	int i 					= 	0;
-	unsigned char 	idxTx 	=   0;
-	dma_addr_t dma_handle 	= 	0;
+	unsigned int frm_len = 0;
+	int i = 0;
+	unsigned char idxTx = 0;
+	dma_addr_t dma_handle = 0;
 	u8* dst = NULL;
 	u8* src = NULL;
 
 	/* place Tx request in the recent Tx BD */
-	idxTx 	= np->nCurrTbd;
+	idxTx = np->nCurrTbd;
 
 	np->stats.collisions += Z077_GET_TBD_FLAG(idxTx, OETH_TX_BD_RETRY) >> 4;
 
@@ -1941,8 +1994,8 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 			Z77_ETHBUF_SIZE, DMA_TO_DEVICE );
 	np->txBd[idxTx].hdlDma = dma_handle;
 	Z077_SET_TBD_ADDR( idxTx, dma_handle);
-	src 	= (u8*)buf;
-	dst 	= (u8*)np->txBd[idxTx].BdAddr;
+	src = (u8*)buf;
+	dst = (u8*)np->txBd[idxTx].BdAddr;
 	frm_len = skb->len;
 
 #if defined(Z77_USE_VLAN_TAGGING)
@@ -2219,7 +2272,7 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		if ( is_valid_ether_addr( mac )) {
 			printk(KERN_INFO
 				"current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n",
-				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 			memcpy(dev->dev_addr, mac, 6);
 			goto cont_init;
 		}
@@ -2234,7 +2287,7 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		if ( is_valid_ether_addr(mac) ) {
 			printk(KERN_INFO
 				"got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n",
-				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 			memcpy(dev->dev_addr, mac, 6);
 			z77_store_mac( dev );
 			goto cont_init;
@@ -2250,7 +2303,8 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 			if ( is_valid_ether_addr(mac) ) {
 				printk(KERN_INFO
 					"got MAC %02x:%02x:%02x:%02x:%02x:%02x from Board ID EEPROM, assigning it.\n",
-					mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+					mac[0], mac[1], mac[2],
+					mac[3], mac[4], mac[5] );
 				memcpy(dev->dev_addr, mac, 6);
 				z77_store_mac( dev );
 				goto cont_init;
@@ -2258,7 +2312,7 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		}
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
 		printk(KERN_INFO
-			"MAC from BOARD EEPROM is invalid or no board EEPROM found. Resorting to random MAC.\n" );
+			"MAC from BOARD EEPROM is invalid or no board EEPROM found. Resorting to random MAC.\n");
 		eth_hw_addr_random( dev );
 		printk(KERN_INFO
 			"assigning MAC %02x:%02x:%02x:%02x:%02x:%02x ",
@@ -2368,7 +2422,7 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		skb->dev = dev;
 		 /* 16 byte align the IP fields. */
 		skb_reserve(skb, NET_IP_ALIGN);
-		skb_copy_to_linear_data(skb, (void*)(np->rxBd[idx].BdAddr), pkt_len);
+		skb_copy_to_linear_data(skb, (np->rxBd[idx].BdAddr), pkt_len);
 
 		skb_put(skb, pkt_len);
 		skb->protocol = eth_type_trans (skb, dev);
@@ -2380,7 +2434,7 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
-		dev->last_rx 		= jiffies;
+		dev->last_rx = jiffies;
 		np->stats.rx_bytes += pkt_len;
 		np->stats.rx_packets++;
 
@@ -2474,24 +2528,24 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 		goto out;	/* It wasnt me, ciao. */
 	}
 
-	if (status & OETH_INT_RXF) { 	/* Got a packet. */
+	if (status & OETH_INT_RXF) {	/* Got a packet. */
 		/* reenabled in NAPI poll routine */
 		Z077_DISABLE_IRQ( OETH_INT_RXF );
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		napi_schedule(&np->napi);
 	}
 
-	if (status & OETH_INT_TXB) { 	/* Transmit complete. */
+	if (status & OETH_INT_TXB) {	/* Transmit complete. */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx(dev);
 	}
 
-	if (status & OETH_INT_BUSY) { 	/* RX FIFO overrun ? */
+	if (status & OETH_INT_BUSY) {	/* RX FIFO overrun ? */
 		Z77WRITE_D32(Z077_BASE,
 				Z077_REG_INT_SRC, status & ~OETH_INT_RXE );
 	}
 
-	if (status & OETH_INT_TXE) {  	/* handle Tx Error */
+	if (status & OETH_INT_TXE) {	/* handle Tx Error */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx_err(dev);
 	}
@@ -2529,9 +2583,9 @@ static struct net_device_stats *z77_get_stats(struct net_device *dev)
 int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 {
 
-	u32 phys_addr 			= 0;
-	struct net_device *dev 	= NULL;
-	struct z77_private *np 	= NULL;
+	u32 phys_addr = 0;
+	struct net_device *dev = NULL;
+	struct z77_private *np = NULL;
 	dma_addr_t memPhysDma;
 	void *     memVirtDma = NULL;
 
@@ -2627,9 +2681,9 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	/* set up timer to poll for link state changes */
 	init_timer(&np->timer);
-	np->timer.expires 	= jiffies + CONFIG_HZ / 2;
-	np->timer.data 		= (unsigned long)dev;
-	np->timer.function 	= z77_timerfunc;
+	np->timer.expires = jiffies + CONFIG_HZ / 2;
+	np->timer.data = (unsigned long)dev;
+	np->timer.function = z77_timerfunc;
 
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
@@ -2643,16 +2697,16 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	dev->get_stats		= z77_get_stats;
 	dev->set_multicast_list	= z77_set_rx_mode;
 #else
-	dev->netdev_ops 	= &z77_netdev_ops;
+	dev->netdev_ops = &z77_netdev_ops;
 #endif
 	dev->watchdog_timeo	= MY_TX_TIMEOUT;
 
 	/* use PHY address from passed module parameter */
-	np->mii_if.phy_id_mask 	= 0x1f;
+	np->mii_if.phy_id_mask = 0x1f;
 	np->mii_if.reg_num_mask = 0x1f;
-	np->mii_if.dev 			= dev;
-	np->mii_if.mdio_read 	= z77_mdio_read;
-	np->mii_if.mdio_write 	= z77_mdio_write;
+	np->mii_if.dev = dev;
+	np->mii_if.mdio_read = z77_mdio_read;
+	np->mii_if.mdio_write = z77_mdio_write;
 
 	/* YES, we support the ethtool utility */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
@@ -2710,10 +2764,10 @@ static u16 G_modCodeArr[] = {
 };
 
 static CHAMELEON_DRIVER_T G_driver = {
-	.name		=	"z087-eth",
-	.modCodeArr = 	G_modCodeArr,
-	.probe		=	men_16z077_probe,
-	.remove		= 	men_16z077_remove
+	.name		= "z087-eth",
+	.modCodeArr	= G_modCodeArr,
+	.probe		= men_16z077_probe,
+	.remove		= men_16z077_remove
 };
 
 /*******************************************************************/
