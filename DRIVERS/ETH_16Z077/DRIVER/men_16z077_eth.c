@@ -180,7 +180,7 @@ struct z77_private {
 	/*!< chameleon instance if more Z87  */
 	u32 phymode;
 	/*!< global probe cnt. for phyadr[]  */
-	u32 nstCount;
+	u32 instCount;
 	/*!< currently used Tx BD */
 	u32 nCurrTbd;
 	/*!< last serviced TX IRQ */
@@ -188,7 +188,7 @@ struct z77_private {
 	/*!< chameleon modCode */
 	u32 modCode;
 	/*!< start address of BDs in RAM */
-	unsigned long bdBase;
+	void *bdBase;
 	/*!< DMA address of BDs in RAM */
 	dma_addr_t bdPhys;
 	u32 pollInProgress;
@@ -465,9 +465,7 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 	int length = MAC_ADDR_LEN;
 	int hashbin = 0;
 	u8 curr_oct = 0;
-	u8 *p = data;
 	int bit	= 0;
-	struct z77_private *np = netdev_priv(dev);
 
 	if (data == NULL)
 		return -1;
@@ -1239,42 +1237,32 @@ static int z77_bd_setup(struct net_device *dev)
 {
 	u32 i=0;
 	struct z77_private *np = netdev_priv(dev);
-	dma_addr_t memPhysDma;
 	struct pci_dev *pcd = np->pdev;
-	dma_addr_t dma_handle = 0;
-	void *     memVirtDma = NULL;
 
 	memset((char*)(Z077_BDBASE + Z077_BD_OFFS), 0x00, 0x400);
 
 	/* Setup Tx BDs */
 	for ( i = 0; i < Z077_TBD_NUM; i++ ) {
-		memVirtDma = dma_zalloc_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
-				&memPhysDma, GFP_KERNEL );
-		np->txBd[i].BdAddr = memVirtDma;
-		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
+		np->txBd[i].BdAddr = dma_zalloc_coherent(&pcd->dev,
+							Z77_ETHBUF_SIZE,
+							&np->txBd[i].hdlDma,
+							GFP_KERNEL );
 		Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
-		smp_wmb();
 	}
 
 	/* Setup Receive BDs */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
-		memVirtDma = dma_alloc_coherent( &pcd->dev, Z77_ETHBUF_SIZE,
-				&memPhysDma, GFP_KERNEL );
-		dma_handle = dma_map_single( &pcd->dev, memVirtDma,
-				(size_t)Z77_ETHBUF_SIZE, DMA_FROM_DEVICE);
-		np->rxBd[i].BdAddr = memVirtDma;
-		np->rxBd[i].hdlDma = dma_handle;
-		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
-		Z077_SET_RBD_ADDR( i, dma_handle );
-		smp_wmb();
+		np->rxBd[i].BdAddr = dma_zalloc_coherent(&pcd->dev,
+							Z77_ETHBUF_SIZE,
+							&np->rxBd[i].hdlDma,
+							GFP_KERNEL);
+		Z077_SET_RBD_ADDR( i, np->rxBd[i].hdlDma );
 		Z077_SET_RBD_FLAG( i, Z077_RBD_IRQ | Z077_RBD_EMP );
-		smp_wmb();
 	}
 
 	/* close the Rx/Tx Rings with Wrap bit in each last BD */
 	Z077_SET_TBD_FLAG( Z077_TBD_NUM - 1 , Z077_TBD_WRAP );
 	Z077_SET_RBD_FLAG( Z077_RBD_NUM - 1 , Z077_RBD_WRAP );
-	smp_wmb();
 	return(0);
 }
 
@@ -1948,7 +1936,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 {
 
 	struct z77_private *np = netdev_priv(dev);
-	struct pci_dev *pcd = np->pdev;
 	unsigned char *buf = skb->data;
 	u32 txbEmpty = 0;
 #if defined(Z77_USE_VLAN_TAGGING)
@@ -1958,7 +1945,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	unsigned int frm_len = 0;
 	int i = 0;
 	unsigned char idxTx = 0;
-	dma_addr_t dma_handle = 0;
 	u8* dst = NULL;
 	u8* src = NULL;
 
@@ -1990,10 +1976,7 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 
 	Z77DBG(ETHT_MESSAGE_LVL2, "%s: z77_send_packet[%d] len 0x%04x\n",
 			dev->name, idxTx, skb->len );
-	dma_handle = dma_map_single( &pcd->dev, (void*)(np->txBd[idxTx].BdAddr),
-			Z77_ETHBUF_SIZE, DMA_TO_DEVICE );
-	np->txBd[idxTx].hdlDma = dma_handle;
-	Z077_SET_TBD_ADDR( idxTx, dma_handle);
+	Z077_SET_TBD_ADDR( idxTx, np->txBd[idxTx].hdlDma);
 	src = (u8*)buf;
 	dst = (u8*)np->txBd[idxTx].BdAddr;
 	frm_len = skb->len;
@@ -2038,15 +2021,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 		Z77DBG(ETHT_MESSAGE_LVL3, "\n");
 	}
 
-	/* sync Tx buffer for write to device */
-	dma_sync_single_for_device( &pcd->dev, dma_handle,
-			Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
-	/* prefetchw( (void*)(np->txBd[idxTx].BdAddr) ); */
-
-	/* sync BD buffer for write to device */
-	dma_sync_single_for_device( &pcd->dev, np->bdPhys,
-			PAGE_SIZE, DMA_TO_DEVICE);
-
 	/* finally kick off transmission */
 	if (idxTx < 32) {
 		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY0, 1 << idxTx );
@@ -2054,10 +2028,6 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	else {
 		Z77WRITE_D32(Z077_BASE, Z077_REG_TXEMPTY1, 1 << (idxTx - 32));
 	}
-
-	/* sync BD buffer for write to device */
-	dma_sync_single_for_device( &pcd->dev,
-			np->bdPhys, PAGE_SIZE, DMA_TO_DEVICE);
 
 	/* dev->trans_start = jiffies; */
 	np->stats.tx_bytes += skb->len;
@@ -2391,17 +2361,10 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 {
 
 	struct z77_private *np = netdev_priv(dev);
-	struct pci_dev *pcd = np->pdev;
 	struct sk_buff *skb = NULL;
 	u32 pkt_len = 0;
-	int i=0;
-	u8 *dst=NULL;
 
 	prefetch(np->rxBd[idx].BdAddr);
-
-	/* sync in data from IP core */
-	dma_sync_single_for_cpu( &pcd->dev, np->rxBd[idx].hdlDma,
-			Z77_ETHBUF_SIZE, DMA_FROM_DEVICE );
 
 	pkt_len	= Z077_GET_RBD_LEN( idx );
 
@@ -2427,14 +2390,9 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		skb_put(skb, pkt_len);
 		skb->protocol = eth_type_trans (skb, dev);
 
-		/* sync in data from IP core */
-		dma_sync_single_for_cpu( &pcd->dev, np->rxBd[idx].hdlDma,
-				Z77_ETHBUF_SIZE, DMA_FROM_DEVICE );
-
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
-		dev->last_rx = jiffies;
 		np->stats.rx_bytes += pkt_len;
 		np->stats.rx_packets++;
 
@@ -2447,7 +2405,6 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 			Z77WRITE_D32(Z077_BASE, Z077_REG_RXEMPTY1,
 					1 << (idx-32));
 		}
-		smp_mb();
 
 	} else {
 		printk (KERN_WARNING "*** %s:Mem squeeze! drop packet\n",
@@ -2497,8 +2454,6 @@ static int z77_close(struct net_device *dev)
 
 	/* Rx BDs, these don't get unmapped after each packet so do that here */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
-		dma_unmap_single( &pcd->dev, np->txBd[i].hdlDma,
-				Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
 		dma_free_coherent( &pcd->dev, Z77_ETHBUF_SIZE,
 				np->rxBd[i].BdAddr, np->rxBd[i].hdlDma);
 	}
@@ -2520,8 +2475,7 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	/* uses dev_id to store 'this' net_device */
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct z77_private *np = netdev_priv(dev);
-	u8 *dst=NULL;
-	int pkt_len,i,handled = 0;
+	int handled = 0;
 
 	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
 	if (!status) {
@@ -2586,8 +2540,6 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	u32 phys_addr = 0;
 	struct net_device *dev = NULL;
 	struct z77_private *np = NULL;
-	dma_addr_t memPhysDma;
-	void *     memVirtDma = NULL;
 
 	dev = alloc_etherdev(sizeof(struct z77_private));
 	if (!dev)
@@ -2642,24 +2594,16 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	/* get a coherent DMAable memory region for the BDs to have
 	 * the 64 Rx/Tx BD stati in sync with IP core */
-	memVirtDma = dma_alloc_coherent( &chu->pdev->dev,
-			PAGE_SIZE, &memPhysDma, GFP_KERNEL );
-	printk( KERN_INFO MEN_Z77_DRV_NAME
-		" dma_alloc_coherent BD table memory @ CPU addr 0x%p, DMA addr 0x%p\n",
-		memVirtDma, memPhysDma);
-	memset((char*)(memVirtDma), 0, PAGE_SIZE);
+	np->bdBase = dma_zalloc_coherent( &chu->pdev->dev,
+			PAGE_SIZE, &np->bdPhys, GFP_KERNEL );
 
-	/* store for dma_free_coherent at module remove */
-	np->bdBase = memVirtDma;
-	np->bdPhys = memPhysDma;
-	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, memPhysDma );
+	Z77WRITE_D32(Z077_BASE, Z077_REG_BDSTART, np->bdPhys);
 
 	np->tbdOff	= Z077_TBD_NUM;
 	np->rbdOff	= 0;
 	np->bdOff	= 0;
 
 	/* clean BD Area */
-	memset((void*)np->bdBase, 0, Z077_BD_AREA_SIZE );
 	strncpy(cardname, "16Z087", sizeof(cardname));
 
 	printk(KERN_INFO MEN_Z77_DRV_NAME
@@ -2751,8 +2695,8 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 	struct net_device *dev = (struct net_device *)chu->driver_data;
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove\n" );
-	netif_napi_del(&np->napi);
-	cancel_work_sync(&np->reset_task);
+		netif_napi_del(&np->napi);
+		cancel_work_sync(&np->reset_task);
 	dma_free_coherent(&chu->pdev->dev, PAGE_SIZE, np->bdBase, np->bdPhys );
 	unregister_netdev(dev);
 	return 0;
