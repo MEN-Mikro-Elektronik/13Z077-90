@@ -2,7 +2,6 @@
 /*!
  *        \file  men_16z077_eth.c
  *      \author  thomas.schnuerer@men.de
- *        $Date: 2017/05/08 $
  *
  *        \brief driver for IP core 16Z087 (Ethernet cores).
  *               supports kernel 3.0 to 4.8
@@ -2610,3 +2609,4 @@ module_exit(men_16z077_cleanup);
 MODULE_LICENSE( "GPL" );
 MODULE_DESCRIPTION( "MEN Ethernet IP Core driver" );
 MODULE_AUTHOR("thomas.schnuerer@men.de");
+MODULE_VERSION("");
