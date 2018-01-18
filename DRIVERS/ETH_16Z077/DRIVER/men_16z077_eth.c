@@ -2609,4 +2609,4 @@ module_exit(men_16z077_cleanup);
 MODULE_LICENSE( "GPL" );
 MODULE_DESCRIPTION( "MEN Ethernet IP Core driver" );
 MODULE_AUTHOR("thomas.schnuerer@men.de");
-MODULE_VERSION("13Z077-90_02_00-1-ga21bbff");
+MODULE_VERSION("13Z077-90_02_00-0-g91c658b");
