@@ -179,7 +179,7 @@ struct z77_private {
 	/*!< chameleon instance if more Z87  */
 	u32 phymode;
 	/*!< global probe cnt. for phyadr[]  */
-	u32 nstCount;
+	u32 instCount;
 	/*!< currently used Tx BD */
 	u32 nCurrTbd;
 	/*!< last serviced TX IRQ */
