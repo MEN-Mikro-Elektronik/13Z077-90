@@ -270,7 +270,12 @@ static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid);
 # endif
 static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, unsigned short vid);
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 static void z77_timerfunc(unsigned long);
+#else
+static void z77_timerfunc(struct timer_list *);
+#endif
 
 /*  Globals  */
 
@@ -464,9 +469,7 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 	int length = MAC_ADDR_LEN;
 	int hashbin = 0;
 	u8 curr_oct = 0;
-	u8 *p = data;
 	int bit	= 0;
-	struct z77_private *np = netdev_priv(dev);
 
 	if (data == NULL)
 		return -1;
@@ -716,11 +719,20 @@ static int z77_scl_out(void *dat, int pinval)
  *
  * \return			-
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 static void z77_timerfunc(unsigned long dat)
+#else
+static void z77_timerfunc(struct timer_list *list)
+#endif
 {
 	u32 linkstate;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	struct net_device *dev = (struct net_device *)dat;
 	struct z77_private *np = netdev_priv(dev);
+#else
+	struct z77_private *np = from_timer(np, list, timer);
+	struct net_device *dev = np->dev;
+#endif
 	linkstate = mii_link_ok(&np->mii_if);
 	if ( np->prev_linkstate != linkstate ) {
 		if ( linkstate == 1 ) { /* link came up: restart IP core */
@@ -2393,8 +2405,6 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 	struct pci_dev *pcd = np->pdev;
 	struct sk_buff *skb = NULL;
 	u32 pkt_len = 0;
-	int i=0;
-	u8 *dst=NULL;
 
 	prefetch(np->rxBd[idx].BdAddr);
 
@@ -2433,7 +2443,9 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 		dev->last_rx = jiffies;
+#endif
 		np->stats.rx_bytes += pkt_len;
 		np->stats.rx_packets++;
 
@@ -2492,14 +2504,14 @@ static int z77_close(struct net_device *dev)
 	/* free DMA resources */
 	for (i = 0; i < Z077_RBD_NUM; i++ )
 		dma_free_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
-				np->txBd[i].BdAddr, np->txBd[i].hdlDma);
+				(void *)np->txBd[i].BdAddr, np->txBd[i].hdlDma);
 
 	/* Rx BDs, these don't get unmapped after each packet so do that here */
 	for (i = 0; i < Z077_RBD_NUM; i++ ) {
 		dma_unmap_single( &pcd->dev, np->txBd[i].hdlDma,
 				Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
 		dma_free_coherent( &pcd->dev, Z77_ETHBUF_SIZE,
-				np->rxBd[i].BdAddr, np->rxBd[i].hdlDma);
+				(void *)np->rxBd[i].BdAddr, np->rxBd[i].hdlDma);
 	}
 
 	Z77DBG( ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__ );
@@ -2519,8 +2531,7 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	/* uses dev_id to store 'this' net_device */
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct z77_private *np = netdev_priv(dev);
-	u8 *dst=NULL;
-	int pkt_len,i,handled = 0;
+	int handled = 0;
 
 	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
 	if (!status) {
@@ -2649,7 +2660,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	memset((char*)(memVirtDma), 0, PAGE_SIZE);
 
 	/* store for dma_free_coherent at module remove */
-	np->bdBase = memVirtDma;
+	np->bdBase = (unsigned long)memVirtDma;
 	np->bdPhys = memPhysDma;
 	Z77WRITE_D32( Z077_BASE, Z077_REG_BDSTART, memPhysDma );
 
@@ -2679,10 +2690,14 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	}
 
 	/* set up timer to poll for link state changes */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	init_timer(&np->timer);
-	np->timer.expires = jiffies + CONFIG_HZ / 2;
 	np->timer.data = (unsigned long)dev;
 	np->timer.function = z77_timerfunc;
+#else
+	timer_setup(&np->timer, z77_timerfunc, 0);
+#endif
+	np->timer.expires = jiffies + CONFIG_HZ / 2;
 
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
@@ -2752,7 +2767,7 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 	Z77DBG( ETHT_MESSAGE_LVL2, "--> men_16z077_remove\n" );
 	netif_napi_del(&np->napi);
 	cancel_work_sync(&np->reset_task);
-	dma_free_coherent(&chu->pdev->dev, PAGE_SIZE, np->bdBase, np->bdPhys );
+	dma_free_coherent(&chu->pdev->dev, PAGE_SIZE, (void *)np->bdBase, np->bdPhys );
 	unregister_netdev(dev);
 	return 0;
 }
