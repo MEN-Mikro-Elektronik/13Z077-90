@@ -59,7 +59,7 @@
 #define RBD_OFF  		(np->rbdOff ) /*!< RxBD offset to IP core start */
 #define Z77_ETHBUF_SIZE		0x1000		  /*!< size of 1 BD, PAGESZ aligned */
 #define Z77_CFGREG_SIZE		0x800		  /*!< all from MODER to last Rx BD */
-#define MY_TX_TIMEOUT  		(1*HZ)  	  /*!< 5 seconds TX wait timeout */
+#define MY_TX_TIMEOUT  		(5*HZ)  	  /*!< 5 seconds TX wait timeout */
 #define Z077_REG_BASE		(0)	 		  /*!< Register base offset */
 #define Z77_PACKLEN_DEFAULT 	0x003c05fc	  /*!< packet length defaults (without FCS) */
 /*@}*/
