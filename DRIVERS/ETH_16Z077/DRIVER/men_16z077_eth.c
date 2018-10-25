@@ -184,8 +184,6 @@ struct z77_private {
 	u32 instCount;
 	/*!< currently used Tx BD */
 	u32 nCurrTbd;
-	/*!< last serviced TX IRQ */
-	u32 txIrq;
 	/*!< chameleon modCode */
 	u32 modCode;
 	/*!< start address of BDs in RAM (virtual adr) */
@@ -2362,7 +2360,6 @@ cont_init:
 
 	/* set management indices */
 	np->nCurrTbd = 0;
-	np->txIrq = 0;
 
 	Z77DBG(ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__);
 	return(0);
@@ -2383,8 +2380,6 @@ cont_init:
 void z77_tx(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
-	np->txIrq++;
-	np->txIrq %= Z077_TBD_NUM;
 	np->stats.tx_packets++;
 
 	/* If we had stopped the queue due to a "tx full" condition,
@@ -2507,7 +2502,7 @@ static int z77_down(struct net_device *dev)
 	napi_disable(&np->napi);
 
 	/* disable all IRQs */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_MASK, 0 );
+	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
 	/* stop receiving/transmitting */
 	Z077_CLR_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
@@ -2559,7 +2554,7 @@ static int z77_close(struct net_device *dev)
 	Z077_CLR_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
 
 	/* disable all IRQs */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_MASK, 0 );
+	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
 	/* clean spurious left IRQs */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
@@ -2607,11 +2602,12 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	if (!status) {
 		goto out;	/* It wasnt me, ciao. */
 	}
+	//spin_lock(&np->lock);
 	np->ip_status = status;
+	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
 	if (status & OETH_INT_RXF) {	/* Got a packet. */
 		/* reenabled in NAPI poll routine */
-		Z077_DISABLE_IRQ( OETH_INT_RXF );
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		napi_schedule(&np->napi);
 	}
@@ -2637,6 +2633,17 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	}
 
 	handled = 1;
+
+	/* If there was an RXF interrupt do not enable the irq again.
+	 * IRQ will be reenabled in polling function */
+	if(status & OETH_INT_RXF)
+		Z077_ENABLE_IRQ(  OETH_INT_TXE
+		                | OETH_INT_RXE
+		                | OETH_INT_BUSY
+		                | OETH_INT_TXB  );
+	else
+		Z077_ENABLE_IRQ( Z077_IRQ_ALL );
+	//spin_unlock(&np->lock);
 out:
 	return IRQ_RETVAL(handled);
 }
@@ -2949,7 +2956,7 @@ errout:
 module_init(men_16z077_init);
 module_exit(men_16z077_cleanup);
 
-MODULE_LICENSE( "GPL" );
-MODULE_DESCRIPTION( "MEN Ethernet IP Core driver" );
 MODULE_AUTHOR("thomas.schnuerer@men.de");
-MODULE_VERSION("BOSCH PROKIST patched version (original from 13MD05-90_05_01_22)");
+MODULE_LICENSE( "GPL" );
+MODULE_VERSION("v1.1 (BOSCH PROKIST version)");
+MODULE_DESCRIPTION("MEN Ethernet IP Core driver BOSCH PROKIST patched version original from 13MD05-90_05_01_22");
