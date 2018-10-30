@@ -13,32 +13,24 @@
  *
  *     \switches -
  */
- /*-------------------------------[ History ]--------------------------------
- *
- * $Log: men_16z077_doc.c,v $
- * Revision 1.6  2012/11/06 20:27:22  ts
- * R: added description of features, updated usable kernels
- *
- * Revision 1.5  2012/09/07 18:04:59  ts
- * R: support for IEEE 802.1Q VLAN tagging requested by customer
- * M: updated driver documentation and added dbglvl description
- *
- * Revision 1.4  2009/02/10 19:18:36  ts
- * R: driver supports also 15P511 PMC
- * M: added explanations about non DMA modes
- *
- * Revision 1.3  2007/11/28 15:37:15  ts
- * spelling / typo corrections by PU
- *
- * Revision 1.2  2007/11/19 13:46:47  ts
- * Documentation finished
- *
- * Revision 1.1  2007/10/23 18:00:39  ts
- * Initial Revision
- *
+ /*
  *---------------------------------------------------------------------------
  * (c) Copyright 2007 by MEN Mikro Elektronik GmbH, Nuremberg, Germany
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /*! \mainpage Linux native driver for Ethernet IP cores
 
     The men_lx_z77(_sw).ko module serves as a Linux driver for the MEN FPGA 
