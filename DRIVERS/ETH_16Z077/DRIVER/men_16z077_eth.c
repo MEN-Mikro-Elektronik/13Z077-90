@@ -122,7 +122,7 @@
 # define Z87_VLAN_FEATURES (NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0) && !defined(RHEL_RELEASE)
 # define vlan_tag_present_func(x)	vlan_tx_tag_present(x)
 # define vlan_tag_get_func(x)		vlan_tx_tag_get(x)
 #else
@@ -265,10 +265,13 @@ static void z77_hash_table_setup(struct net_device *dev);
 static int ether_gen_crc(struct net_device *dev, u8 *data);
 #if defined(Z77_USE_VLAN_TAGGING)
 # if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-static void z77_vlan_rx_register(struct net_device *dev, struct vlan_group *grp);
 static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid);
 # endif
+#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
+static void z77_vlan_rx_add_vid(struct net_device *dev, unsigned short vid);
+#else
 static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, unsigned short vid);
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
@@ -637,12 +640,16 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_get_stats		= z77_get_stats,
 	.ndo_tx_timeout		= z77_tx_timeout,
 	.ndo_set_rx_mode	= z77_set_rx_mode,
+#if defined(RHEL_RELEASE)
+# if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+	.extended
+# endif
+#endif
 	.ndo_change_mtu		= z77_change_mtu,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= z77_set_mac_address,
 #if defined(Z77_USE_VLAN_TAGGING)
 # if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-	.ndo_vlan_rx_register	= z77_vlan_rx_register,
 	.ndo_vlan_rx_kill_vid   = z77_vlan_rx_kill_vid,
 # endif
 	.ndo_vlan_rx_add_vid	= z77_vlan_rx_add_vid,
@@ -1298,8 +1305,12 @@ static int z77_bd_setup(struct net_device *dev)
  * \param vid		\IN VLAN group ID
  *
  */
+#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
+static void z77_vlan_rx_add_vid(struct net_device *dev, unsigned short vid)
+#else
 static int z77_vlan_rx_add_vid(struct net_device *dev,
 		unsigned short proto, unsigned short vid)
+#endif
 {
 	struct z77_private *np = netdev_priv(dev);
 	unsigned long flags;
@@ -1315,7 +1326,11 @@ static int z77_vlan_rx_add_vid(struct net_device *dev,
 				__FUNCTION__, vid );
 	}
 	spin_unlock_irqrestore (&np->lock, flags);
+#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
+	return;
+#else
 	return 0;
+#endif
 }
 
 # if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
@@ -2443,7 +2458,7 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0) && !defined(RHEL_RELEASE)
 		dev->last_rx = jiffies;
 #endif
 		np->stats.rx_bytes += pkt_len;
