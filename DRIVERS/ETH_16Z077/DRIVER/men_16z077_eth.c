@@ -7,18 +7,9 @@
  *               supports kernel 3.0 to 4.8
  *
  *     Switches:
- */
-/*-------------------------------[ History ]---------------------------------
  *
- * git controlled file. Latest CVS logmessage was:
- * Revision 1.45  2014/07/16 19:30:45  ts
- * R: 1. Compilerwarning: incompatible pointer type of .ndo_vlan_rx_add_vid
- *    2. several compilerwarnings about typecasts with gcc 4.8, kernel 3.14
- * M: 1. corrected declaration of z77_vlan_rx_add_vid
- *    2. changed variable types to appropriate ones, use unsigned long etc.
- *
- * For all later versions see git commit message from MEN website!
- *
+ *---------------------------------------------------------------------------
+ * (c) Copyright 2019, MEN Mikro Elektronik GmbH
  ****************************************************************************/
 /*
  *  This program is free software: you can redistribute it and/or modify
