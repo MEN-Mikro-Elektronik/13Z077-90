@@ -7,6 +7,17 @@
   <docroot>DRIVERS/ETH_16Z077/DOC/html/index.html</docroot>
   <modellist>
 	<model>
+	  <hwname>16Z077_ETH</hwname>
+	  <description>10/100Mbit Fast Ethernet IP core</description>
+	  <devnameprefix>ETH</devnameprefix>
+	  <devtype>NATIVE</devtype>
+      <autoid>
+        <chamunitid>0x4d</chamunitid>
+		<chamv2id>87</chamv2id>
+      </autoid>
+	  <busif>ChameleonBus</busif>
+	</model>
+	<model>
 	  <hwname>16Z087_ETH</hwname>
 	  <description>10/100Mbit Fast Ethernet IP core</description>
 	  <devnameprefix>ETH</devnameprefix>
@@ -24,7 +35,7 @@
   <swmodulelist>
 	<swmodule>
 	  <name>men_lx_z77</name>
-	  <description>Driver for 16Z087 IP core</description>
+	  <description>Driver for 16Z077/87 IP core</description>
 	  <type>Native Driver</type>
 	  <makefilepath>DRIVERS/ETH_16Z077/DRIVER/driver.mak</makefilepath>
       <os>Linux</os>
