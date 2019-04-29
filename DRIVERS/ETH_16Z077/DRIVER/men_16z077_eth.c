@@ -4,7 +4,6 @@
  *      \author  thomas.schnuerer@men.de
  *
  *        \brief driver for IP core 16Z087 (Ethernet cores).
- *               supports kernel 3.0 to 4.8
  *
  *     Switches:
  *

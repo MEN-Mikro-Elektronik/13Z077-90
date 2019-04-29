@@ -50,11 +50,9 @@
 	to build the driver into the kernel but its primary intended use is to 
 	load it as a module.
 
-	\subsection kernver Supported kernel versions and features
+	\subsection kernver Supported features
 
-	The driver was build tested with kernel versions 2.6.20 up to 3.6. Tests
-    were done with kernels 2.6.22 (PPC), 2.6.32 (x86, Ubuntu 10.04) and 3.2.0 
-    (x86, Ubuntu 12.04). The most important features are:
+	The most important features are:
     - Support for IEEE 802.1q VLAN tagging (kernel must be enabled for it)
     - Support for Multicast MAC addresses (tool ipmaddr can be used to apply addresses)
     - verbose reporting when message level set with ethtool
