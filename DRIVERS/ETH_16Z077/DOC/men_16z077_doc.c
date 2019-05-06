@@ -394,6 +394,6 @@ NAME
 */
 
 
-/** \page dummy
+/** \page 16z077dummy MEN logo
   \menimages
 */
