@@ -11,7 +11,7 @@
 
 <div class="left_to_right" style="padding-top: 6px; background-color: #F0F0F0; height: 110px; border-bottom: 2px solid #D1D1D2;">
 	<!-- Titel -->
-	<img src="menlogo.gif" alt="MEN" style="float: left; height: 103px; width: 155px; margin: 0px;"></a>
+	<img src="menlogo.gif" alt="MEN" style="float: left; height: 103px; width: 155px; margin: 0px;">
 	<h1 style="margin: 0px; padding-top: 35px; padding-bottom: 0px;">Linux native Driver for 16Z077/87 Ethernet IP cores &nbsp; </h1>
 	<h3>Macros acting on Registers within the IP Core</h3>
 </div>
@@ -59,7 +59,7 @@
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D32(Z077_BASE, Z077_REG_MODER, \
-        Z77READ_D32(Z077_BASE, Z077_REG_MODER) &amp;~(f))
+            Z77READ_D32(Z077_BASE, Z077_REG_MODER) &amp;~(f))
 </pre></div>clear bit f in MODE Register     </td>
   </tr>
 </table>
@@ -88,7 +88,7 @@
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D32(Z077_BASE, Z077_REG_INT_MASK, \
-         (Z77READ_D32(Z077_BASE,Z077_REG_INT_MASK)) &amp; ~(n) )
+            (Z77READ_D32(Z077_BASE,Z077_REG_INT_MASK)) &amp; ~(n) )
 </pre></div>disable IRQ source n in Interrupt Mask Register     </td>
   </tr>
 </table>
@@ -146,7 +146,7 @@
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D32(Z077_BASE, Z077_REG_MODER, \
-        Z77READ_D32(Z077_BASE, Z077_REG_MODER)|(f))
+            Z77READ_D32(Z077_BASE, Z077_REG_MODER)|(f))
 </pre></div>set bit f in MODE Register     </td>
   </tr>
 </table>
@@ -158,7 +158,7 @@
 <!-- Footer -->
 	<p class="footer">
 	Generated for Linux native Driver for 16Z077/87 Ethernet IP cores using <a href="http://www.doxygen.org">doxygen</a>.<br>
-	Copyright &copy; 2014 <a href="http://www.men.de">MEN Mikro Elektronik GmbH</a>. All Rights Reserved.
+	Copyright &copy; 2019 <a href="http://www.men.de">MEN Mikro Elektronik GmbH</a>. All Rights Reserved.
 	</p>
 </div>
 

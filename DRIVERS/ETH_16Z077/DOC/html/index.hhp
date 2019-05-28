@@ -17,7 +17,6 @@ files.html
 men__16z077__eth_8h-source.html
 men__16z077__doc_8c.html
 men__16z077__eth_8c.html
-men__16z077__eth_8h.html
 annotated.html
 functions.html
 functions_vars.html
@@ -25,7 +24,7 @@ structphy__device__tbl.html
 structz077__bd.html
 structz077__reg__info.html
 structz77__private.html
-dummy.html
+16z077dummy.html
 group____NETOPS__FUNC.html
 group____Z077MACS.html
 group____Z077BASES.html
@@ -56,6 +55,4 @@ modules.html
 globals.html
 globals_func.html
 globals_vars.html
-globals_type.html
-globals_defs.html
 pages.html

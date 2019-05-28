@@ -1,7 +1,7 @@
 @INCLUDE_PATH = $(MEN_DOXYGENTMPL)
 @INCLUDE = DoxyfileCommon
 
-#MDIS_COMMIT=
+#MDIS_COMMIT=4698b956c48dd5eece75706e004dcb7ccf315788
 
 PROJECT_NAME           = "Linux native Driver for 16Z077/87 Ethernet IP cores"
 INPUT                  = ../DRIVER/ \

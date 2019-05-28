@@ -11,7 +11,7 @@
 
 <div class="left_to_right" style="padding-top: 6px; background-color: #F0F0F0; height: 110px; border-bottom: 2px solid #D1D1D2;">
 	<!-- Titel -->
-	<img src="menlogo.gif" alt="MEN" style="float: left; height: 103px; width: 155px; margin: 0px;"></a>
+	<img src="menlogo.gif" alt="MEN" style="float: left; height: 103px; width: 155px; margin: 0px;">
 	<h1 style="margin: 0px; padding-top: 35px; padding-bottom: 0px;">Linux native Driver for 16Z077/87 Ethernet IP cores &nbsp; </h1>
 	<h3>Macros acting on the Rx/Tx Descriptors</h3>
 </div>
@@ -24,13 +24,13 @@
 <h1>Macros acting on the Rx/Tx Descriptors</h1><table border=0 cellpadding=0 cellspacing=0>
 <tr><td></td></tr>
 <tr><td colspan=2><br><h2>Defines</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a0">Z077_SET_TBD_ADDR</a>(n, adr)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a0">Z077_SET_TBD_ADDR</a>(n, adr)&nbsp;&nbsp;&nbsp;Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+(((n)+TBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR, (adr))</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a1">Z077_SET_RBD_ADDR</a>(n, adr)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a1">Z077_SET_RBD_ADDR</a>(n, adr)&nbsp;&nbsp;&nbsp;Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+ Z077_BD_OFFS_ADR, adr)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a2">Z077_GET_RBD_ADDR</a>(n)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a2">Z077_GET_RBD_ADDR</a>(n)&nbsp;&nbsp;&nbsp;Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a3">Z077_GET_TBD_ADDR</a>(n)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a3">Z077_GET_TBD_ADDR</a>(n)&nbsp;&nbsp;&nbsp;Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+TBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_ADR)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a4">Z077_SET_TBD_FLAG</a>(n, f)</td></tr>
 
@@ -40,52 +40,52 @@
 
 <tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a7">Z077_CLR_RBD_FLAG</a>(n, f)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a8">Z077_GET_RBD_FLAG</a>(n, f)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a8">Z077_GET_RBD_FLAG</a>(n, f)&nbsp;&nbsp;&nbsp;(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+RBD_OFF)*Z077_BDSIZE)) &amp; (f) )</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a9">Z077_GET_TBD_FLAG</a>(n, f)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a9">Z077_GET_TBD_FLAG</a>(n, f)&nbsp;&nbsp;&nbsp;(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE)) &amp; (f) )</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a10">Z077_SET_TBD_LEN</a>(n, l)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a10">Z077_SET_TBD_LEN</a>(n, l)&nbsp;&nbsp;&nbsp;Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE), (l));</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a11">Z077_GET_TBD_LEN</a>(n)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a11">Z077_GET_TBD_LEN</a>(n)&nbsp;&nbsp;&nbsp;Z77READ_D16(Z077_BDBASE,    Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE))</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a12">Z077_GET_RBD_LEN</a>(n)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a12">Z077_GET_RBD_LEN</a>(n)&nbsp;&nbsp;&nbsp;Z77READ_D16(Z077_BDBASE,   Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_LEN )</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a13">Z077_CLR_RBD_LEN</a>(n)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a13">Z077_CLR_RBD_LEN</a>(n)&nbsp;&nbsp;&nbsp;Z77WRITE_D16(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_LEN, 0 );</td></tr>
 
 <tr><td class="memItemLeft" nowrap align=right valign=top>#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="group____MACRO1.html#a14">Z077_RBD_EMPTY</a>(n)&nbsp;&nbsp;&nbsp;Z077_GET_RBD_FLAG((n), OETH_RX_BD_EMPTY)</td></tr>
 
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 <div class="fragment"><pre>
-   Macros to manipulate Rx- and Tx BD Entries
+ Macros to manipulate Rx- and Tx BD Entries
 
-   These provide HW-Independent ways to set/get Address entries and Flag
-   settings. Detailled Explanation for Macro construction below:
+ These provide HW-Independent ways to set/get Address entries and Flag
+ settings. Detailled Explanation for Macro construction below:
 
-   original ETH OpenCore:  BDs start at Z077_BD_OFFS (0x400) after ChamBase.
+ original ETH OpenCore:  BDs start at Z077_BD_OFFS (0x400) after ChamBase.
 
-   Z077_BDBASE  = ChamBase + 0x400
-   Z077_BD_OFFS = 0x400
-   +--------------+
-   |              |
-   |--------------|- Rx BD Start
-   |              |
-   |--------------|- TX Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
-   |XXXXXXXXXXXXXX|  Ctrl Regs
-   +--------------+- Chameleon Base Address
+ Z077_BDBASE  = ChamBase + 0x400
+ Z077_BD_OFFS = 0x400
+ +--------------+
+ |              |
+ |--------------|- Rx BD Start
+ |              |
+ |--------------|- TX Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
+ |XXXXXXXXXXXXXX|  Ctrl Regs
+ +--------------+- Chameleon Base Address
 
-   New Core: BDs reside in RAM, Address must be 10bit-aligned
+ New Core: BDs reside in RAM, Address must be 10bit-aligned
 
-   Z077_BDBASE  = pDrvCtrl-&gt;bdBase;
-   Z077_BD_OFFS = 0
+ Z077_BDBASE  = pDrvCtrl-&gt;bdBase;
+ Z077_BD_OFFS = 0
 
-   +--------------+
-   |              |
-   |--------------|- Tx BD Start
-   |              |
-   +--------------+- Rx Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
+ +--------------+
+ |              |
+ |--------------|- Tx BD Start
+ |              |
+ +--------------+- Rx Bd  Start (= Z077_BDBASE + Z077_BD_OFFS )
 
-   </pre></div><hr><h2>Define Documentation</h2>
+ </pre></div><hr><h2>Define Documentation</h2>
 <a name="a7" doxytag="men_16z077_eth.h::Z077_CLR_RBD_FLAG"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
@@ -114,8 +114,7 @@
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
-      Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE) &amp;\
-      ~(f) )
+            Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE) &amp; ~(f) )
 </pre></div>clear flag f of Rx BD nr. (n)     </td>
   </tr>
 </table>
@@ -130,7 +129,7 @@
           <td class="md" nowrap valign="top">n&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77WRITE_D16(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_LEN, 0 );
       </table>
     </td>
   </tr>
@@ -143,9 +142,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, \
-        Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_LEN, 0 );
-</pre></div>clear a Rx BDs len entry after packet is processed     </td>
+clear a Rx BDs len entry after packet is processed     </td>
   </tr>
 </table>
 <a name="a6" doxytag="men_16z077_eth.h::Z077_CLR_TBD_FLAG"></a><p>
@@ -176,8 +173,7 @@
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE),\
-     Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE)) &amp;\
-     ~(f) )
+            Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + (((n)+TBD_OFF) * Z077_BDSIZE)) &amp; ~(f) )
 </pre></div>clear flag f of Tx BD nr. (n)     </td>
   </tr>
 </table>
@@ -192,7 +188,7 @@
           <td class="md" nowrap valign="top">n&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
       </table>
     </td>
   </tr>
@@ -205,9 +201,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + \
-        ( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR)
-</pre></div>get Rx BD Address for Rx BD nr. (n)     </td>
+get Rx BD Address for Rx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a8" doxytag="men_16z077_eth.h::Z077_GET_RBD_FLAG"></a><p>
@@ -224,7 +218,7 @@
           <td class="md" nowrap>f&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+RBD_OFF)*Z077_BDSIZE)) &amp; (f) )
       </table>
     </td>
   </tr>
@@ -237,9 +231,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+RBD_OFF)*Z077_BDSIZE)) &amp;\
-       (f) )
-</pre></div>get flag f of Rx BD nr. (n)     </td>
+get flag f of Rx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a12" doxytag="men_16z077_eth.h::Z077_GET_RBD_LEN"></a><p>
@@ -253,7 +245,7 @@
           <td class="md" nowrap valign="top">n&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77READ_D16(Z077_BDBASE,   Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_LEN )
       </table>
     </td>
   </tr>
@@ -266,9 +258,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77READ_D16(Z077_BDBASE, \
-        Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_LEN )
-</pre></div>retrieve the length stored in Rx BD nr. (n)     </td>
+retrieve the length stored in Rx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a3" doxytag="men_16z077_eth.h::Z077_GET_TBD_ADDR"></a><p>
@@ -282,7 +272,7 @@
           <td class="md" nowrap valign="top">n&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + ( ((n)+TBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_ADR)
       </table>
     </td>
   </tr>
@@ -295,9 +285,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77READ_D32(Z077_BDBASE, Z077_BD_OFFS + \
-        ( ((n)+TBD_OFF) * Z077_BDSIZE)+Z077_BD_OFFS_ADR)
-</pre></div>get Tx BD Address of ETH Frame of Tx BD nr. (n)     </td>
+get Tx BD Address of ETH Frame of Tx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a9" doxytag="men_16z077_eth.h::Z077_GET_TBD_FLAG"></a><p>
@@ -314,7 +302,7 @@
           <td class="md" nowrap>f&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE)) &amp; (f) )
       </table>
     </td>
   </tr>
@@ -327,9 +315,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>(Z77READ_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE)) &amp;\
-       (f) )
-</pre></div>get TBD Flag f of Tx BD nr. (n)     </td>
+get TBD Flag f of Tx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a11" doxytag="men_16z077_eth.h::Z077_GET_TBD_LEN"></a><p>
@@ -343,7 +329,7 @@
           <td class="md" nowrap valign="top">n&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77READ_D16(Z077_BDBASE,    Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE))
       </table>
     </td>
   </tr>
@@ -356,9 +342,7 @@
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77READ_D16(Z077_BDBASE, \
-        Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE))
-</pre></div>Get ETH Frame length for Tx BD nr. (n)     </td>
+Get ETH Frame length for Tx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a14" doxytag="men_16z077_eth.h::Z077_RBD_EMPTY"></a><p>
@@ -402,7 +386,7 @@ return non-zero if the Rx BD (n) is empty     </td>
           <td class="md" nowrap>adr&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+ Z077_BD_OFFS_ADR, adr)
       </table>
     </td>
   </tr>
@@ -415,9 +399,7 @@ return non-zero if the Rx BD (n) is empty     </td>
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77WRITE_D32(Z077_BDBASE, \
-        Z077_BD_OFFS+( ((n)+RBD_OFF) * Z077_BDSIZE)+ Z077_BD_OFFS_ADR, adr)
-</pre></div>set Rx BD Address for Rx BD nr. (n)     </td>
+set Rx BD Address for Rx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a5" doxytag="men_16z077_eth.h::Z077_SET_RBD_FLAG"></a><p>
@@ -448,8 +430,7 @@ return non-zero if the Rx BD (n) is empty     </td>
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE,\
-        Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE)|\
-        (f) )
+            Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS + ((n)+RBD_OFF) * Z077_BDSIZE)| (f) )
 </pre></div>set flag f of Rx BD nr. (n)     </td>
   </tr>
 </table>
@@ -467,7 +448,7 @@ return non-zero if the Rx BD (n) is empty     </td>
           <td class="md" nowrap>adr&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77WRITE_D32(Z077_BDBASE,  Z077_BD_OFFS+(((n)+TBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR, (adr))
       </table>
     </td>
   </tr>
@@ -480,9 +461,7 @@ return non-zero if the Rx BD (n) is empty     </td>
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77WRITE_D32(Z077_BDBASE, \
-        Z077_BD_OFFS+(((n)+TBD_OFF) * Z077_BDSIZE) + Z077_BD_OFFS_ADR, (adr))
-</pre></div>set Tx BD Address for Tx BD nr. (n)     </td>
+set Tx BD Address for Tx BD nr. (n)     </td>
   </tr>
 </table>
 <a name="a4" doxytag="men_16z077_eth.h::Z077_SET_TBD_FLAG"></a><p>
@@ -513,8 +492,7 @@ return non-zero if the Rx BD (n) is empty     </td>
 
 <p>
 <b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE), \
-        Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE))| \
-        (f) )
+            Z77READ_D16( Z077_BDBASE, Z077_BD_OFFS+( ((n)+TBD_OFF)*Z077_BDSIZE))| (f) )
 </pre></div>set flag f of Tx BD nr. (n)     </td>
   </tr>
 </table>
@@ -532,7 +510,7 @@ return non-zero if the Rx BD (n) is empty     </td>
           <td class="md" nowrap>l&nbsp;</td>
           <td class="mdname1" valign="top" nowrap>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap>
+          <td class="md" nowrap>&nbsp;&nbsp;&nbsp;Z77WRITE_D16(Z077_BDBASE, Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE), (l));
       </table>
     </td>
   </tr>
@@ -545,9 +523,7 @@ return non-zero if the Rx BD (n) is empty     </td>
     <td>
 
 <p>
-<b>Value:</b><div class="fragment"><pre>Z77WRITE_D16(Z077_BDBASE, \
-        Z077_BD_OFFS + Z077_BD_OFFS_LEN+( ((n)+TBD_OFF) * Z077_BDSIZE), (l));
-</pre></div>set ETH Frame length for Tx BD nr. (n)     </td>
+set ETH Frame length for Tx BD nr. (n)     </td>
   </tr>
 </table>
 
@@ -558,7 +534,7 @@ return non-zero if the Rx BD (n) is empty     </td>
 <!-- Footer -->
 	<p class="footer">
 	Generated for Linux native Driver for 16Z077/87 Ethernet IP cores using <a href="http://www.doxygen.org">doxygen</a>.<br>
-	Copyright &copy; 2014 <a href="http://www.men.de">MEN Mikro Elektronik GmbH</a>. All Rights Reserved.
+	Copyright &copy; 2019 <a href="http://www.men.de">MEN Mikro Elektronik GmbH</a>. All Rights Reserved.
 	</p>
 </div>
 
