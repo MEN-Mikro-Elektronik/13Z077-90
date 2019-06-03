@@ -3,8 +3,6 @@
  *        \file  men_16z077_doc.c
  *
  *      \author  thomas.schnuerer@men.de
- *        $Date: 2012/11/06 20:27:22 $
- *    $Revision: 1.6 $
  *
  *      \brief   User documentation for native Linux driver of
  *				 16Z077_ETH / 16Z087_ETH IP cores

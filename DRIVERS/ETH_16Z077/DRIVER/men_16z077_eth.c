@@ -56,6 +56,8 @@
 #include <MEN/smb2.h>
 #include "men_16z077_eth.h"
 
+static const char IdentString[]=MENT_XSTR(MAK_REVISION);
+
 /* defines */
 
 /* max. # of supported Z87 Instances in the system */
@@ -274,8 +276,6 @@ static void z77_timerfunc(struct timer_list *);
 
 /* filled depending on found IP core, either "16Z077" or "16Z087" */
 static char cardname[16];
-
-static const char *version = "$Id: men_16z077_eth.c,v 1.45 2014/07/16 19:30:45 ts Exp $";
 
 /* helper for description of phy advertised/supported capabilities*/
 static const char *phycaps[] =
@@ -981,7 +981,7 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 	spin_lock_irqsave(&np->lock, flags);
 
 	strncpy(info->driver, cardname, sizeof(info->driver)-1);
-	strncpy(info->version, version, sizeof(info->version)-1);
+	strncpy(info->version, IdentString, sizeof(info->version)-1);
 
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
@@ -2847,7 +2847,7 @@ static int __init men_16z077_init(void)
 #if defined(Z77_USE_VLAN_TAGGING)
 	printk(KERN_INFO MEN_Z77_DRV_NAME " VLAN support enabled.\n");
 #endif
-	printk(KERN_INFO MEN_Z77_DRV_NAME " version %s\n", version);
+	printk(KERN_INFO MEN_Z77_DRV_NAME " version %s\n", IdentString);
 
 	/* check passed module parameters */
 	for (i = 0; i < NR_ETH_CORES_MAX; i++ ) {

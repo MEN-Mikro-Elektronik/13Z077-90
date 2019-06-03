@@ -1,8 +1,6 @@
 #**************************  M a k e f i l e ********************************
 #  
 #         Author: ts
-#          $Date: 2007/11/16 15:55:43 $
-#      $Revision: 1.1 $
 #  
 #    Description: makefile descriptor for Z077/87 Driver, unswapped
 #                      
@@ -23,6 +21,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MAK_NAME=lx_z77
+# the next line is updated during the MDIS installation
+STAMPED_REVISION="13Z077-90_02_02-8-g8014f0c-dirty_2019-05-30"
+
+DEF_REVISION=MAK_REVISION=$(STAMPED_REVISION)
 
 MAK_LIBS=
 
@@ -35,7 +37,8 @@ MAK_INCL= $(MEN_INC_DIR)/men_typs.h   \
 
 MAK_OPTIM=$(OPT_1)
 
-MAK_SWITCH=$(SW_PREFIX)MAC_MEM_MAPPED 
+MAK_SWITCH=$(SW_PREFIX)MAC_MEM_MAPPED  \
+		$(SW_PREFIX)$(DEF_REVISION)
 
 MAK_INP1=men_16z077_eth$(INP_SUFFIX)
 
