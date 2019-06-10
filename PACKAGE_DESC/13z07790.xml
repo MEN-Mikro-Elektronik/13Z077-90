@@ -2,8 +2,8 @@
 <package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="packagedesc.xsd">
 	<name>13z07790</name>
 	<description>Linux native driver for 16Z077/87 ETH core</description>
-	<date>2018-01-18</date>
-	<revision>2.0</revision>
+	<date>2019-06-07</date>
+	<revision>13Z077-90_02_02-10-ge773556</revision>
 	<docroot>DRIVERS/ETH_16Z077/DOC/html/index.html</docroot>
 	<modellist>
 		<model>
