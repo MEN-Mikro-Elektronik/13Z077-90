@@ -1256,10 +1256,12 @@ static int z77_bd_setup(struct net_device *dev)
 
 	/* Setup Tx BDs */
 	for ( i = 0; i < Z077_TBD_NUM; i++ ) {
-		memVirtDma = dma_zalloc_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
+		memVirtDma = dma_alloc_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
 				&memPhysDma, GFP_KERNEL );
 		np->txBd[i].BdAddr = memVirtDma;
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
+	#endif
 		Z077_SET_TBD_FLAG( i, Z077_TBD_IRQ );
 		smp_wmb();
 	}
@@ -1272,7 +1274,9 @@ static int z77_bd_setup(struct net_device *dev)
 				(size_t)Z77_ETHBUF_SIZE, DMA_FROM_DEVICE);
 		np->rxBd[i].BdAddr = memVirtDma;
 		np->rxBd[i].hdlDma = dma_handle;
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 		memset((char*)(memVirtDma), 0, Z77_ETHBUF_SIZE);
+	#endif
 		Z077_SET_RBD_ADDR( i, dma_handle );
 		smp_wmb();
 		Z077_SET_RBD_FLAG( i, Z077_RBD_IRQ | Z077_RBD_EMP );
@@ -2662,7 +2666,9 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	printk( KERN_INFO MEN_Z77_DRV_NAME
 		" dma_alloc_coherent BD table memory @ CPU addr 0x%p, DMA addr 0x%p\n",
 		memVirtDma, memPhysDma);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,0,0)
 	memset((char*)(memVirtDma), 0, PAGE_SIZE);
+#endif
 
 	/* store for dma_free_coherent at module remove */
 	np->bdBase = (unsigned long)memVirtDma;
