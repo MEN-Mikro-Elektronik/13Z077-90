@@ -993,6 +993,110 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 	spin_unlock_irq(&np->lock);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+/******************************************************************************
+ ** z77_dump_ecmd helper function to dump contents of ethtool settings struct
+ *
+ * \param ecmd		\IN settings structure passed to ethtool, see linux/ethtool.h
+ *
+ * \return			0;
+ */
+static void z77_dump_ecmd(const struct ethtool_link_ksettings *ecmd)
+{
+	unsigned int i = 0;
+	printk( KERN_INFO "main contents of ethtool_link_ksettings struct:\n");
+
+	printk( KERN_INFO "supported    0x%08x\n", ecmd->link_modes.supported );
+	for (i = 0; i < 15; i++) {
+		if ( (1<<i) & (*ecmd->link_modes.supported))
+			printk("    + %s\n", phycaps[i]);
+	}
+
+	printk( KERN_INFO "advertising  0x%08x\n", ecmd->link_modes.advertising );
+	for (i = 0; i < 15; i++) {
+		if ( (1<<i) & (*ecmd->link_modes.advertising))
+			printk("    + %s\n", phycaps[i]);
+	}
+
+	printk( KERN_INFO "speed        %d\n",
+			ecmd->base.speed );
+	printk( KERN_INFO "duplex       %d (%s)\n",
+			ecmd->base.duplex, ecmd->base.duplex ? "full" : "half" );
+	printk( KERN_INFO "autoneg      %d (%s)\n",
+			ecmd->base.autoneg, ecmd->base.autoneg ? "on" : "off" );
+}
+
+/******************************************************************************
+ ** z77_ethtool_get_link_ksettings retrieve NIC settings with ethtool
+ *
+ * \param dev		\IN net_device struct for this NIC
+ * \param ecmd		\IN settings structure passed to ethtool, see linux/ethtool.h
+ *
+ * \return			0;
+ */
+static int z77_ethtool_get_link_ksettings(struct net_device *dev,
+		struct ethtool_link_ksettings *ecmd)
+{
+	struct z77_private *np = netdev_priv(dev);
+	unsigned long flags;
+
+	if( !(np->flags & IFF_UP) )
+		return -ENETDOWN;
+
+	spin_lock_irqsave(&np->lock, flags);
+	mii_ethtool_get_link_ksettings(&np->mii_if, ecmd);
+
+	if (np->msg_enable == ETHT_MESSAGE_LVL3)
+		z77_dump_ecmd(ecmd);
+
+	spin_unlock_irqrestore (&np->lock, flags);
+	return 0;
+}
+
+/******************************************************************************
+ ** z77_ethtool_set_link_ksettings set NIC settings with ethtool
+ *
+ * \param dev		\IN net_device struct for this NIC
+ * \param ecmd		\IN settings structure passed to ethtool, see linux/ethtool.h
+ *
+ * \return			0 or negative error number;
+ */
+static int z77_ethtool_set_link_ksettings(struct net_device *dev,
+		const struct ethtool_link_ksettings *ecmd)
+{
+	struct ethtool_link_ksettings ncmd;
+	struct z77_private *np = netdev_priv(dev);
+	int res=0;
+	unsigned long flags;
+
+	if ( !(np->flags & IFF_UP) )
+		return -ENETDOWN;
+
+	spin_lock_irqsave(&np->lock, flags);
+
+	if (np->msg_enable == ETHT_MESSAGE_LVL3)
+		z77_dump_ecmd(ecmd);
+
+	res = mii_ethtool_set_link_ksettings(&np->mii_if, ecmd);
+	/* wait to let settings take effect */
+	schedule_timeout_interruptible(CONFIG_HZ/4);
+	/* check PHY again, set MODER[10] to match
+	 * duplexity setting in it */
+	mii_ethtool_get_link_ksettings(&np->mii_if, &ncmd);
+
+	/* hand over duplexity from phy */
+	if (ncmd.base.duplex == DUPLEX_FULL) {
+		Z077_SET_MODE_FLAG(OETH_MODER_FULLD);
+	} else {
+		Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
+	}
+
+	spin_unlock_irqrestore (&np->lock, flags);
+	/* force link-up */
+	np->prev_linkstate = 0;
+	return res;
+}
+#else
 /******************************************************************************
  ** z77_dump_ecmd helper function to dump contents of ethtool command struct
  *
@@ -1103,6 +1207,7 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 	np->prev_linkstate = 0;
 	return res;
 }
+#endif
 
 /******************************************************************************
  ** z77_ethtool_nway_reset restart MII
@@ -1187,8 +1292,13 @@ static void z77_ethtool_testmode(struct net_device *dev,
  */
 static struct ethtool_ops z77_ethtool_ops = {
 	.get_drvinfo	= z77_ethtool_get_drvinfo,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+	.get_link_ksettings	= z77_ethtool_get_link_ksettings,
+	.set_link_ksettings	= z77_ethtool_set_link_ksettings,
+#else
 	.get_settings	= z77_ethtool_get_settings,
 	.set_settings	= z77_ethtool_set_settings,
+#endif
 	.nway_reset	= z77_ethtool_nway_reset,
 	.get_link	= z77_ethtool_get_link,
 	.get_msglevel	= z77_ethtool_get_msglevel,
@@ -1750,7 +1860,11 @@ static void z77_reset_task(struct work_struct *work)
 					      struct z77_private,
 					      reset_task);
 	struct net_device *dev = np->dev;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+	struct ethtool_link_ksettings ecmd = {0};
+#else
 	struct ethtool_cmd ecmd = {0};
+#endif
 	int settings_saved=0;
 
 	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
@@ -1766,13 +1880,21 @@ static void z77_reset_task(struct work_struct *work)
 		z77_regdump(dev);
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+	settings_saved = !z77_ethtool_get_link_ksettings(dev, &ecmd);
+#else
 	settings_saved = !z77_ethtool_get_settings(dev, &ecmd);
+#endif
 	z77_close(dev);
 	z77_open(dev);
 
 	/* restore settings */
 	if (settings_saved) {
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+		z77_ethtool_set_link_ksettings(dev, &ecmd);
+	#else
 		z77_ethtool_set_settings(dev, &ecmd);
+	#endif
 	}
 
 	np->stats.tx_errors++;
