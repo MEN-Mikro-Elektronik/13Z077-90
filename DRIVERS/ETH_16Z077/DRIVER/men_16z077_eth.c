@@ -982,6 +982,7 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 
 	strncpy(info->driver, cardname, sizeof(info->driver)-1);
 	strncpy(info->version, IdentString, sizeof(info->version)-1);
+	info->version[sizeof(info->version)-1] = '\0';
 
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
@@ -2348,7 +2349,7 @@ static int z77_get_mac_from_board_id(u8 *mac)
 	memset(&i2cinfo, 0, sizeof(struct i2c_board_info));
 	i2cinfo.addr  = MEN_BRDID_EE_ADR;
 	i2cinfo.flags = I2C_CLASS_HWMON;
-	strncpy(i2cinfo.type, "EEP", 3);
+	strncpy(i2cinfo.type, "EEP", 4);
 
 	for ( i=0; i < I2C_MAX_ADAP_CNT; i++ ) {
 		adap = i2c_get_adapter(i);
