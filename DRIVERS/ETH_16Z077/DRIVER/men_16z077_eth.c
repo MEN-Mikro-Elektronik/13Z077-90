@@ -981,8 +981,11 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 	spin_lock_irqsave(&np->lock, flags);
 
 	strncpy(info->driver, cardname, sizeof(info->driver)-1);
-	strncpy(info->version, IdentString, sizeof(info->version)-1);
-	info->version[sizeof(info->version)-1] = '\0';
+	memset(info->version,'\0', sizeof(info->version));
+	if (strlen(IdentString) < sizeof(info->version))
+		memcpy(info->version, IdentString, strlen(IdentString));
+	else
+		memcpy(info->version, IdentString, sizeof(info->version)-1);
 
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
