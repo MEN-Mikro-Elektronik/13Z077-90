@@ -148,6 +148,7 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 /* Add more possible PHY IDs here */
 static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
+	{ 0x2000, "TI DP83822"},	/* TI PHY on F301N */
 	{ 0x0022, "Micrel "},		/* Micrel PHY on EM01 */
 	{ 0x0141, "Marvell 88E6095"},	/* Switch F301, F302 */
 	{ 0x0143, "Broadcom BCM5481"},	/* F11S */
