@@ -2938,7 +2938,8 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(%d)\n", __FUNCTION__, first_init);
 
 	z77_reset( dev );
-	if (first_init == 0) { /* 1. Check what's already in the MAC Registers */
+	if (first_init == 0) {
+		/* 1. Check what's already in the MAC Registers */
 		mac0reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR0 );
 		mac1reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR1 );
 		mac[0] = ( mac1reg >> 8  ) & 0xff;
@@ -2947,13 +2948,13 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[3] = ( mac0reg >> 16 ) & 0xff;
 		mac[4] = ( mac0reg >> 8  ) & 0xff;
 		mac[5] = ( mac0reg >> 0  ) & 0xff;
-		//if (is_valid_ether_addr( mac )) {
-		//	printk(KERN_INFO
-		//		"current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n",
-		//		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-		//	memcpy(dev->dev_addr, mac, 6);
-		//	goto cont_init;
-		//}
+		if (is_valid_ether_addr( mac )) {
+			printk(KERN_INFO
+				"current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n",
+				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+			memcpy(dev->dev_addr, mac, 6);
+			goto cont_init;
+		}
 
 		/* 2. initial MAC wasn't valid, check for attached MAC EEPROM */
 		printk(KERN_INFO
