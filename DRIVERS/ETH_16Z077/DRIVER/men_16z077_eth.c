@@ -157,7 +157,7 @@ static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
 	{ 0xffff, ""}
 };
 
-/* I2C Message - used for pure i2c transaction, also from /dev interface */
+/* I2C Message - used for pure i2c transaction */
 typedef struct z77_i2c_msg_st
 {
 	u16 addr;				/**< slave address			*/
@@ -170,7 +170,6 @@ typedef struct z77_i2c_msg_st
 	u16 len;				/**< msg length				*/
 	u8 *buf;				/**< pointer to msg data		*/
 } z77_i2c_msg_t;
-
 
 /**
  * z077_private: main data struct for the driver \n
@@ -324,10 +323,11 @@ static int G_globalInstanceCount = 0;
 #define PHY_MODE_NAME_LEN	(5+1)
 #define MAC_ADDR_NAME_LEN	(13+1)
 
-static int nrcores  = NR_ETH_CORES_MAX;
-static int dbglvl   = 0;
-static int phyadr[NR_ETH_CORES_MAX]    = {0,0,0,0,0,0,0,0};
-static int mode[NR_ETH_CORES_MAX]      = {0,0,0,0,0,0,0,0};
+static int nrcores			= NR_ETH_CORES_MAX;
+static int mode[NR_ETH_CORES_MAX]	= {0,0,0,0,0,0,0,0};
+static int phyadr[NR_ETH_CORES_MAX]	= {0,0,0,0,0,0,0,0};
+static int dbglvl			= 0;
+static int maceepromacc			= 0;
 
 module_param_array(mode, int, (void*)&nrcores, 0664);
 MODULE_PARM_DESC(mode, " 0=autoneg 1=10MbitHD 2=10MbitFD 3=100MbitHD 4=100MbitFD ex.: mode=4,0,0");
@@ -335,6 +335,8 @@ module_param_array(phyadr, int, (void*)&nrcores, 0664 );
 MODULE_PARM_DESC(phyadr, " address of PHY#n connected to each Z87 unit. example: phyadr=1,2,0");
 module_param(dbglvl, int, 0664 );
 MODULE_PARM_DESC(dbglvl, " 0=none 1=basic 2=verbose 3=very verbose (dumps every packet, use with care!). ");
+module_param(maceepromacc, int, 0664 );
+MODULE_PARM_DESC(maceepromacc, " 0=none !=0 create sysfs note z77_eeprod_mac to access EEPROM attached to FPGA");
 
 /* helper to keep Register descriptions in a comfortable struct */
 const Z077_REG_INFO z77_reginfo[] = {
@@ -3419,15 +3421,15 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
 		goto err_free_reg;
 	} else {
-		if (register_netdev(dev) == 0) {
-			if (device_create_file(&dev->dev, &dev_attr_linkstate))
-				dev_err(&dev->dev,
-						"Error creating sysfs file\n");
-			printk(KERN_ALERT "CREATE SYSFS!!!!!\n");
-			if (device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
-				dev_err(&dev->dev,
-						"Error creating sysfs file\n");
+		if (register_netdev(dev) != 0) {
+			return 0;
 		}
+		if (device_create_file(&dev->dev, &dev_attr_linkstate))
+			dev_err(&dev->dev,
+				"Error creating sysfs file linkstate\n");
+		if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
+			dev_err(&dev->dev,
+				"Error creating sysfs file z77_eeprod_mac\n");
 		return 0;
 	}
 
