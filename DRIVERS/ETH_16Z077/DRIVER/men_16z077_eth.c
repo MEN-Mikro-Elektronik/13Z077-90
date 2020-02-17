@@ -336,7 +336,7 @@ MODULE_PARM_DESC(phyadr, " address of PHY#n connected to each Z87 unit. example:
 module_param(dbglvl, int, 0664 );
 MODULE_PARM_DESC(dbglvl, " 0=none 1=basic 2=verbose 3=very verbose (dumps every packet, use with care!). ");
 module_param(maceepromacc, int, 0664 );
-MODULE_PARM_DESC(maceepromacc, " 0=none !=0 create sysfs note z77_eeprod_mac to access EEPROM attached to FPGA");
+MODULE_PARM_DESC(maceepromacc, " 0=none !=0 create sysfs node z77_eeprod_mac to access EEPROM attached to FPGA");
 
 /* helper to keep Register descriptions in a comfortable struct */
 const Z077_REG_INFO z77_reginfo[] = {
