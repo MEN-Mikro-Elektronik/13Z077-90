@@ -2745,6 +2745,19 @@ out_err:
 	return error;
 }
 
+static u8 z77_eeprod_mac_calc_parity(u8 *ptr, u32 len)
+{
+	u8 parity = 0xF;
+
+	while( len-- ){
+		parity ^= (*ptr >> 4);
+		parity ^= (*ptr & 0xf);
+		ptr++;
+	}
+
+	return parity;
+}
+
 /*******************************************************************/
 /** attribute function to read MAC from EEPROM
  *
@@ -2856,7 +2869,7 @@ static ssize_t z77_eeprod_mac_store(struct device *dev,
 	/* Address */
 	msgbuf[0] = 0;
 	/* MAC_ID_MAGIC | parity  */
-	msgbuf[1] = 0xB0 /*| CalcParity(FdoData->PermanentAddress,sizeof(FdoData->PermanentAddress))*/;
+	msgbuf[1] = 0xB0 | z77_eeprod_mac_calc_parity( (((u8 *)msgbuf) + 2), 6 );
 	i2cmes.len = 8;
 
 	/* Write MAC to EEPROD */
@@ -2983,7 +2996,11 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[3] = msgbuf[4];
 		mac[4] = msgbuf[5];
 		mac[5] = msgbuf[6];
-		if ( is_valid_ether_addr(mac) ) {
+		
+		/* Check if MAC is valid and calc parity is equal */
+		if (   ((msgbuf[0] & 0xF0) == 0xB0) 
+		    && ((msgbuf[0] & 0x0F) == z77_eeprod_mac_calc_parity( ((u8 *)msgbuf) + 1, 6 ))
+		    && (is_valid_ether_addr(mac)) ) {
 			printk(KERN_INFO
 				"got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n",
 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
