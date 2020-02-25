@@ -645,7 +645,8 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_tx_timeout		= z77_tx_timeout,
 	.ndo_set_rx_mode	= z77_set_rx_mode,
 #if defined(RHEL_RELEASE)
-# if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+# if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)) && \
+     (LINUX_VERSION_CODE <  KERNEL_VERSION(4,18,0))
 	.extended
 # endif
 #endif
