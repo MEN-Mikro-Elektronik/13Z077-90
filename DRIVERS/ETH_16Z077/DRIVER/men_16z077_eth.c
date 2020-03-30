@@ -1788,6 +1788,9 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(phyAddr=%d)\n",
 			__FUNCTION__, phyAddr);
 
+	/* clear structure */
+	memset(&cmd, 0, sizeof(struct ethtool_cmd));
+
 	/* some default settings */
 	cmd.port = PORT_MII;
 	cmd.transceiver = XCVR_INTERNAL;
@@ -1798,31 +1801,31 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	case phymode_10hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_10fd:
 		np->mii_if.full_duplex = 1;
 		np->mii_if.force_media = 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_100hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_100fd:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_auto:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 0;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		cmd.autoneg = AUTONEG_ENABLE;
 		bDoAutoneg = 1;
