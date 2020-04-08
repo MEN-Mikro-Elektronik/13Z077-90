@@ -339,7 +339,7 @@ module_param(maceepromacc, int, 0664 );
 MODULE_PARM_DESC(maceepromacc, " 0=none !=0 create sysfs node z77_eeprod_mac to access EEPROM attached to FPGA");
 
 /* helper to keep Register descriptions in a comfortable struct */
-const Z077_REG_INFO z77_reginfo[] = {
+static const Z077_REG_INFO z77_reginfo[] = {
 	{"MODER     ", Z077_REG_MODER		},
 	{"INT_SRC   ", Z077_REG_INT_SRC		},
 	{"INT_MASK  ", Z077_REG_INT_MASK	},
@@ -1035,11 +1035,10 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
 
-	/* ts: added Register Dumps */
 	if (np->msg_enable)
 		z77_regdump(dev);
 
-	spin_unlock_irq(&np->lock);
+	spin_unlock_irqrestore(&np->lock, flags);
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
@@ -1356,7 +1355,7 @@ static struct ethtool_ops z77_ethtool_ops = {
 };
 
 /* return non zero if the Tx BD is full already, a stall condition occurred */
-u32 tx_full(struct net_device *dev)
+static u32 tx_full(struct net_device *dev)
 {
 	int txbEmpty;
 	struct z77_private *np = netdev_priv(dev);
@@ -1789,6 +1788,9 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(phyAddr=%d)\n",
 			__FUNCTION__, phyAddr);
 
+	/* clear structure */
+	memset(&cmd, 0, sizeof(struct ethtool_cmd));
+
 	/* some default settings */
 	cmd.port = PORT_MII;
 	cmd.transceiver = XCVR_INTERNAL;
@@ -1799,31 +1801,31 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	case phymode_10hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_10fd:
 		np->mii_if.full_duplex = 1;
 		np->mii_if.force_media = 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_100hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_100fd:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_auto:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 0;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		cmd.autoneg = AUTONEG_ENABLE;
 		bDoAutoneg = 1;
@@ -3080,7 +3082,7 @@ cont_init:
  *
  * \return -
  */
-void z77_tx(struct net_device *dev)
+static void z77_tx(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
 
@@ -3482,7 +3484,7 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 	return 0;
 }
 
-static u16 G_modCodeArr[] = {
+static const u16 G_modCodeArr[] = {
 	CHAMELEON_16Z087_ETH,
 	CHAMELEON_MODCODE_END
 };
