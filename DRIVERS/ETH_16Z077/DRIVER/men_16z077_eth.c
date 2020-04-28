@@ -967,7 +967,7 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	retVal = Z77READ_D32( Z077_BASE, Z077_REG_MIIRX_DATA );
 
 mdio_read_out:
-	spin_unlock_irq(&np->mii_lock);
+	spin_unlock_irqrestore(&np->mii_lock, flags);
 	return retVal;
 }
 
@@ -1019,7 +1019,7 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 	}
 
 mdio_write_out:
-	spin_unlock_irq(&np->mii_lock);
+	spin_unlock_irqrestore(&np->mii_lock, flags);
 	return;
 }
 
