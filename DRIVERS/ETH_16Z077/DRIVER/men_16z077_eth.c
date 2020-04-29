@@ -236,6 +236,8 @@ struct z77_private {
 	struct pci_dev *pdev;
 	/*!< MII API hooks, info */
 	struct mii_if_info mii_if;
+	/*!< prevent concurrent accesses on mii interface */
+	spinlock_t mii_lock;
 	/*!< debug message level */
 	u32 msg_enable;
 	/*!< NAPI struct */
@@ -926,37 +928,46 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	int retVal = 0xffff;
 	volatile u32 miival = 0;
 	volatile u32 tout = MII_ACCESS_TIMEOUT;
+	unsigned long flags;
+	struct z77_private *np = netdev_priv(dev);
+
+	spin_lock_irqsave(&np->mii_lock, flags);
 
 	/* wait until a previous BUSY disappears */
 	do {
 		miival = Z77READ_D32(Z077_BASE, Z077_REG_MIISTATUS );
 		tout--;
-	} while( (miival & OETH_MIISTATUS_BUSY) && tout);
+	} while ( (miival & OETH_MIISTATUS_BUSY) && tout );
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Read timeout!\n");
-		return -1;
+		retVal = -1;
+		goto mdio_read_out;
 	}
 
 	/* set up combined PHY and Register within Phy,
 	 * then kick off read cmd */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MIIADR,
 			(location & 0xff) << 8 | phy_id );
-	Z77WRITE_D32( Z077_BASE, Z077_REG_MIICMD, OETH_MIICMD_RSTAT);
+	Z77WRITE_D32( Z077_BASE, Z077_REG_MIICMD, OETH_MIICMD_RSTAT );
 
 	/* wait until the PHY finished */
 	do {
-		miival = Z77READ_D32(Z077_BASE, Z077_REG_MIISTATUS );
+		miival = Z77READ_D32( Z077_BASE, Z077_REG_MIISTATUS );
 		tout--;
-	} while( (miival & OETH_MIISTATUS_BUSY) && tout);
+	} while ( (miival & OETH_MIISTATUS_BUSY) && tout );
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Read timeout!\n");
-		return -1;
+		retVal = -1;
+		goto mdio_read_out;
 	}
 
-    /* fetch read Value from MIIRX_DATA*/
-    retVal = Z77READ_D32( Z077_BASE, Z077_REG_MIIRX_DATA );
+	/* fetch read Value from MIIRX_DATA*/
+	retVal = Z77READ_D32( Z077_BASE, Z077_REG_MIIRX_DATA );
+
+mdio_read_out:
+	spin_unlock_irqrestore(&np->mii_lock, flags);
 	return retVal;
 }
 
@@ -975,6 +986,10 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 {
 	volatile u32 miival = 0;
 	volatile u32 tout = MII_ACCESS_TIMEOUT;
+	unsigned long flags;
+	struct z77_private *np = netdev_priv(dev);
+
+	spin_lock_irqsave(&np->mii_lock, flags);
 
 	/* wait until a previous BUSY disappears */
 	do {
@@ -984,7 +999,7 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Write timeout!\n");
-		return;
+		goto mdio_write_out;
 	}
 
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MIIADR,
@@ -1000,8 +1015,12 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Write timeout!\n");
-		return;
+		goto mdio_write_out;
 	}
+
+mdio_write_out:
+	spin_unlock_irqrestore(&np->mii_lock, flags);
+	return;
 }
 
 /**
@@ -3334,6 +3353,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	np = netdev_priv(dev);
 	np->pdev = chu->pdev;
 	spin_lock_init(&np->lock);
+	spin_lock_init(&np->mii_lock);
 	pci_set_drvdata(chu->pdev, dev);
 
 	netif_napi_add( dev, &np->napi, z77_poll, Z077_WEIGHT );
