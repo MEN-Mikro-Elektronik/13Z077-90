@@ -27,111 +27,164 @@
 <table border=0 cellpadding=0 cellspacing=0>
 <tr><td></td></tr>
 <tr><td colspan=2><br><h2>Data Structures</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>struct &nbsp;</td><td class="memItemRight" valign=bottom><b>z77_i2c_msg_st</b></td></tr>
+
 <tr><td class="memItemLeft" nowrap align=right valign=top>struct &nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html">z77_private</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z077_private: main data struct for the driver <br>
  this struct keeps all data for a per-IP-core instance of 16Z077/87 </em> <a href="structz77__private.html#_details">More...</a><em><br><br></td></tr>
+<tr><td colspan=2><br><h2>Defines</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a27" doxytag="men_16z077_eth.c::I2C_M_TEN"></a>
+#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a27">I2C_M_TEN</a>&nbsp;&nbsp;&nbsp;0x0010</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">we have a ten bit chip address <br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a28" doxytag="men_16z077_eth.c::I2C_M_WR"></a>
+#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a28">I2C_M_WR</a>&nbsp;&nbsp;&nbsp;0x0000</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">write access <br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a29" doxytag="men_16z077_eth.c::I2C_M_RD"></a>
+#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a29">I2C_M_RD</a>&nbsp;&nbsp;&nbsp;0x0001</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">read access <br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a30" doxytag="men_16z077_eth.c::I2C_M_NOSTART"></a>
+#define&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a30">I2C_M_NOSTART</a>&nbsp;&nbsp;&nbsp;0x4000</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">don't send start bit <br><br></td></tr>
 <tr><td colspan=2><br><h2>Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a48">z77_open</a> (struct net_device *dev)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a55">z77_open</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_open - open the ethernet device for first usage Open/initialize the Ethernet device. This routine should set everything up anew at each open, even registers that should only need to be set once at boot, so that there is non-reboot way to recover if something goes wrong. </em> <a href="#a48"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a49">z77_send_packet</a> (struct sk_buff *skb, struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_open - open the ethernet device for first usage Open/initialize the Ethernet device. This routine should set everything up anew at each open, even registers that should only need to be set once at boot, so that there is non-reboot way to recover if something goes wrong. </em> <a href="#a55"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a56">z77_send_packet</a> (struct sk_buff *skb, struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">send a ready made ethernet frame </em> <a href="#a49"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>irqreturn_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a50">z77_irq</a> (int irq, void *dev_id)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">send a ready made ethernet frame </em> <a href="#a56"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>irqreturn_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a57">z77_irq</a> (int irq, void *dev_id)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">central IRQ handler </em> <a href="#a50"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a51">z77_close</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">central IRQ handler </em> <a href="#a57"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a58">z77_close</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The inverse routine to <a class="el" href="men__16z077__eth_8c.html#a48">z77_open()</a>. </em> <a href="#a51"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>net_device_stats *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a52">z77_get_stats</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The inverse routine to <a class="el" href="men__16z077__eth_8c.html#a55">z77_open()</a>. </em> <a href="#a58"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>net_device_stats *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a59">z77_get_stats</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the current statistics. </em> <a href="#a52"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a53">z77_tx_timeout</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the current statistics. </em> <a href="#a59"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a60">z77_tx_timeout</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Timeout handler when no scheduled ETH irq arrived. </em> <a href="#a53"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a54">z77_rx_err</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Timeout handler when no scheduled ETH irq arrived. </em> <a href="#a60"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a61">z77_rx_err</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">net_rx_err - irq context handler to report Errors </em> <a href="#a54"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a55">z77_tx_err</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">net_rx_err - irq context handler to report Errors </em> <a href="#a61"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a62">z77_tx_err</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">net_tx_err - irq context handler to report Errors </em> <a href="#a55"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a56">z77_poll</a> (struct napi_struct *napi, int budget)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">net_tx_err - irq context handler to report Errors </em> <a href="#a62"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a63">z77_poll</a> (struct napi_struct *napi, int budget)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_poll - Rx poll function to support the NAPI functionality </em> <a href="#a56"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a58">z77_phy_reset</a> (struct net_device *dev, u8 phyAddr)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_poll - Rx poll function to support the NAPI functionality </em> <a href="#a63"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a65">z77_phy_reset</a> (struct net_device *dev, u8 phyAddr)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_reset This routine send a Reset command to the PHY specified in the parameter phyaddr. </em> <a href="#a58"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a59">z77_phy_identify</a> (struct net_device *dev, u8 phyAddr)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_reset This routine send a Reset command to the PHY specified in the parameter phyaddr. </em> <a href="#a65"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a66">z77_phy_identify</a> (struct net_device *dev, u8 phyAddr)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_identify - probe the PHY device This routine probes the PHY device by reading its PHY Identifier Register </em> <a href="#a59"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a60">z77_phy_init</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_identify - probe the PHY device This routine probes the PHY device by reading its PHY Identifier Register </em> <a href="#a66"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a67">z77_phy_init</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_init - initialize and configure the PHY devices This routine scans, initializes and configures PHY devices. </em> <a href="#a60"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a61">z77_init_phymode</a> (struct net_device *dev, u8 phyAddr)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_phy_init - initialize and configure the PHY devices This routine scans, initializes and configures PHY devices. </em> <a href="#a67"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a68">z77_init_phymode</a> (struct net_device *dev, u8 phyAddr)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_init_phymode - Set Phy Mode and Flags according to given mode </em> <a href="#a61"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a62">z77_pass_packet</a> (struct net_device *dev, unsigned int idx)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_init_phymode - Set Phy Mode and Flags according to given mode </em> <a href="#a68"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a69">z77_pass_packet</a> (struct net_device *dev, unsigned int idx)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_pass_packet - packet passing function for one ETH frame </em> <a href="#a62"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a65">z77_reset</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_pass_packet - packet passing function for one ETH frame </em> <a href="#a69"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a72">z77_reset</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_reset - reset device with asynchronous global Reset Register 0x54 </em> <a href="#a65"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a66">z77_ioctl</a> (struct net_device *dev, struct ifreq *ifr, int cmd)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_reset - reset device with asynchronous global Reset Register 0x54 </em> <a href="#a72"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a73">z77_ioctl</a> (struct net_device *dev, struct ifreq *ifr, int cmd)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">ioctl function - interface to applications </em> <a href="#a66"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a76">z77_store_mac</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">ioctl function - interface to applications </em> <a href="#a73"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a85">z77_store_mac</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Write MAC address from struct net to Registers MAC_ADDR0/1. </em> <a href="#a76"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a77">z77_set_rx_mode</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Write MAC address from struct net to Registers MAC_ADDR0/1. </em> <a href="#a85"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a86">z77_set_rx_mode</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Handle multicast and promiscuous mode set. </em> <a href="#a77"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a95">z77_bd_setup</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Handle multicast and promiscuous mode set. </em> <a href="#a86"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a105">z77_bd_setup</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_bd_setup - perform initialization of buffer descriptors this initializes the buffer descriptors such that PCI DMA - ready memory chunks are allocated </em> <a href="#a95"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a96">z77_do_autonegotiation</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">z77_bd_setup - perform initialization of buffer descriptors this initializes the buffer descriptors such that PCI DMA - ready memory chunks are allocated </em> <a href="#a105"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a106">z77_do_autonegotiation</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Do the complete Autonegotiation for the used Ethernet PHY. </em> <a href="#a96"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a97">cleanup_card</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Do the complete Autonegotiation for the used Ethernet PHY. </em> <a href="#a106"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a107">cleanup_card</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">remove the NIC from Kernel </em> <a href="#a97"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a98">z77_reset_task</a> (struct work_struct *work)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">remove the NIC from Kernel </em> <a href="#a107"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a108">z77_reset_task</a> (struct work_struct *work)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Timeout handler when no scheduled ETH irq arrived. </em> <a href="#a98"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a99">z77_get_oldest_frame</a> (u32 rx0, u32 rx1, u32 *nrframes)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Timeout handler when no scheduled ETH irq arrived. </em> <a href="#a108"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a109">z77_get_oldest_frame</a> (u32 rx0, u32 rx1, u32 *nrframes)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">When RX0 or RX1 nonempty, return oldest entry. </em> <a href="#a99"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>unsigned int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a100">smb_cycle</a> (struct net_device *dev, unsigned char c)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">When RX0 or RX1 nonempty, return oldest entry. </em> <a href="#a109"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a110" doxytag="men_16z077_eth.c::z77_i2c_delay"></a>
+void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a110">z77_i2c_delay</a> (void)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">perform a SMBus cycle on EEprom </em> <a href="#a100"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>unsigned char&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a101">z77_read_byte_data</a> (struct net_device *dev, unsigned int offset)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">delay for each I2C cycle <br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a111">z77_i2c_freeBus</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Read a byte from MAC EEPROM directly attached to this Z87 Every cycle of the SMB access is coded in a descriptive string: S: Start 0: 0 O: Stop 1: 1 R: Read A: Ack (SDA just set high, no check!) W: Write P: Pause 50 us G: Get bit (=reads SDA) Attention: this assumes that exactly one byte is read (8x'G' in a row)! </em> <a href="#a101"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a102">z77_get_mac_from_board_id</a> (u8 *mac)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">free the I2C bus Free the bus from busy devices by setting SDA high and clock 20 times. </em> <a href="#a111"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a112">z77_i2c_start</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">finding a board ident EEPROM to read MAC from </em> <a href="#a102"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a103">chipset_init</a> (struct net_device *dev, u32 first_init)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set RESTART condition Set RESTART condition ____ SDA |_ ___ SCL X_| </em> <a href="#a112"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a113">z77_i2c_stop</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize the IP core Registers setup the necessary Registers like MODER, BDNUM (used on Z77 only) ans others such that the NIC can completely be restarted if needed. </em> <a href="#a103"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a104">z77_tx</a> (struct net_device *dev)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set STOP condition Set STOP condition __ SDA X___| ___ SCL X_| </em> <a href="#a113"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a114">z77_i2c_checkAckn</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The interrupt context Tx packet handler Called from within main ISR context. unmaps allocated PCI transfer memory region and updates stats info. No spin_lock here because main irq routine does local Eth core IRQ disabling already. </em> <a href="#a104"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a105">men_16z077_probe</a> (CHAMELEON_UNIT_T *chu)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">check the bit for acknowledge Check acknowledge _ __ SDA |___| expected ___ SCL ___| </em> <a href="#a114"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a115">z77_i2c_setAckn</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">men_16z077_probe - PNP function for ETH, per instance </em> <a href="#a105"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a106">men_16z077_remove</a> (CHAMELEON_UNIT_T *chu)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set the bit for acknowledge Set acknowledge _ __ SDA |___| set ___ SCL ___| </em> <a href="#a115"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a116">z77_i2c_notAckn</a> (struct net_device *dev)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">PNP function to remove the unit driver. </em> <a href="#a106"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a107" doxytag="men_16z077_eth.c::men_16z077_cleanup"></a>
-void __exit&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a107">men_16z077_cleanup</a> (void)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set the bit for not acknowledge Set not acknowledge _______ SDA set ___ SCL ___| </em> <a href="#a116"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a117">z77_i2c_sendByte</a> (struct net_device *dev, u8 val)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">send a byte Send a byte _ ___ _ SDA _X___X_ set for each bit ___ SCL ___| </em> <a href="#a117"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a118">z77_i2c_readByte</a> (struct net_device *dev, u8 *valP)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">read a byte Read a byte _ ___ _ SDA _X___X_ read before SCL risig edge for each bit ___ SCL ___| </em> <a href="#a118"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a119">z77_i2c_read_msg</a> (struct net_device *dev, struct z77_i2c_msg_st *msg, int stop)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">read a defined length of bytes Read a defined length of bytes </em> <a href="#a119"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a120">z77_i2c_write_msg</a> (struct net_device *dev, const struct z77_i2c_msg_st *msg, int stop)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Write a defined length of bytes Write a defined length of bytes. </em> <a href="#a120"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>ssize_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a123">z77_eeprod_mac_show</a> (struct device *dev, struct device_attribute *attr, char *buf)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">attribute function to read MAC from EEPROM </em> <a href="#a123"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>ssize_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a124">z77_eeprod_mac_store</a> (struct device *dev, struct device_attribute *attr, const char *buf, size_t count)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">attribute function to write MAC to EEPROM </em> <a href="#a124"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a126">z77_get_mac_from_board_id</a> (u8 *mac)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">finding a board ident EEPROM to read MAC from </em> <a href="#a126"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a127">chipset_init</a> (struct net_device *dev, u32 first_init)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize the IP core Registers setup the necessary Registers like MODER, BDNUM (used on Z77 only) ans others such that the NIC can completely be restarted if needed. </em> <a href="#a127"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a128">z77_tx</a> (struct net_device *dev)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The interrupt context Tx packet handler Called from within main ISR context. unmaps allocated PCI transfer memory region and updates stats info. No spin_lock here because main irq routine does local Eth core IRQ disabling already. </em> <a href="#a128"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a129">men_16z077_probe</a> (CHAMELEON_UNIT_T *chu)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">men_16z077_probe - PNP function for ETH, per instance </em> <a href="#a129"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a130">men_16z077_remove</a> (CHAMELEON_UNIT_T *chu)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">PNP function to remove the unit driver. </em> <a href="#a130"></a><em><br><br></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a131" doxytag="men_16z077_eth.c::men_16z077_cleanup"></a>
+void __exit&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a131">men_16z077_cleanup</a> (void)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">drivers cleanup routine <br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>int __init&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a108">men_16z077_init</a> (void)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>int __init&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a132">men_16z077_init</a> (void)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">module init function </em> <a href="#a108"></a><em><br><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">module init function </em> <a href="#a132"></a><em><br><br></td></tr>
 <tr><td colspan=2><br><h2>Variables</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a40" doxytag="men_16z077_eth.c::z77_ethtool_ops"></a>
-ethtool_ops&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a40">z77_ethtool_ops</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a name="a47" doxytag="men_16z077_eth.c::z77_ethtool_ops"></a>
+ethtool_ops&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a47">z77_ethtool_ops</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This structure provides the interface functions to the standard ethtool. <br><br></td></tr>
 </table>
@@ -141,8 +194,8 @@ driver for IP core 16Z087 (Ethernet cores).
 <dl compact><dt><b>Author:</b></dt><dd><a href="mailto:thomas.schnuerer@men.de">thomas.schnuerer@men.de</a></dd></dl>
 <p>
 Switches:<p>
---------------------------------------------------------------------------- Copyright 2019, MEN Mikro Elektronik GmbH<hr><h2>Function Documentation</h2>
-<a name="a103" doxytag="men_16z077_eth.c::chipset_init"></a><p>
+--------------------------------------------------------------------------- Copyright 2020, MEN Mikro Elektronik GmbH<hr><h2>Function Documentation</h2>
+<a name="a127" doxytag="men_16z077_eth.c::chipset_init"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -190,7 +243,7 @@ Initialize the IP core Registers setup the necessary Registers like MODER, BDNUM
     </td>
   </tr>
 </table>
-<a name="a97" doxytag="men_16z077_eth.c::cleanup_card"></a><p>
+<a name="a107" doxytag="men_16z077_eth.c::cleanup_card"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -227,7 +280,7 @@ remove the NIC from Kernel
     </td>
   </tr>
 </table>
-<a name="a108" doxytag="men_16z077_eth.c::men_16z077_init"></a><p>
+<a name="a132" doxytag="men_16z077_eth.c::men_16z077_init"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -260,7 +313,7 @@ We are a chameleon unit driver rather than a true standalone Ethernet driver, so
     </td>
   </tr>
 </table>
-<a name="a105" doxytag="men_16z077_eth.c::men_16z077_probe"></a><p>
+<a name="a129" doxytag="men_16z077_eth.c::men_16z077_probe"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -297,7 +350,7 @@ men_16z077_probe - PNP function for ETH, per instance
     </td>
   </tr>
 </table>
-<a name="a106" doxytag="men_16z077_eth.c::men_16z077_remove"></a><p>
+<a name="a130" doxytag="men_16z077_eth.c::men_16z077_remove"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -335,54 +388,7 @@ The netdev struct is kept in struct CHAMELEON_UNIT_Ts private driver data pointe
     </td>
   </tr>
 </table>
-<a name="a100" doxytag="men_16z077_eth.c::smb_cycle"></a><p>
-<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
-  <tr>
-    <td class="mdRow">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="md" nowrap valign="top"> unsigned int smb_cycle </td>
-          <td class="md" valign="top">(&nbsp;</td>
-          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
-          <td class="mdname" nowrap> <em>dev</em>, </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td class="md" nowrap>unsigned char&nbsp;</td>
-          <td class="mdname" nowrap> <em>c</em></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td class="md">)&nbsp;</td>
-          <td class="md" colspan="2"><code> [static]</code></td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-<table cellspacing=5 cellpadding=0 border=0>
-  <tr>
-    <td>
-      &nbsp;
-    </td>
-    <td>
-
-<p>
-perform a SMBus cycle on EEprom 
-<p>
-<dl compact><dt><b>Parameters:</b></dt><dd>
-  <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC </td></tr>
-    <tr><td valign=top><em>c</em>&nbsp;</td><td><b>IN</b> command char to describe which cycle to perform</td></tr>
-  </table>
-</dl>
-<dl compact><dt><b>Returns:</b></dt><dd>0 or 1 when cycle='G' or 0xffff </dd></dl>
-    </td>
-  </tr>
-</table>
-<a name="a95" doxytag="men_16z077_eth.c::z77_bd_setup"></a><p>
+<a name="a105" doxytag="men_16z077_eth.c::z77_bd_setup"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -418,7 +424,7 @@ z77_bd_setup - perform initialization of buffer descriptors this initializes the
     </td>
   </tr>
 </table>
-<a name="a51" doxytag="men_16z077_eth.c::z77_close"></a><p>
+<a name="a58" doxytag="men_16z077_eth.c::z77_close"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -444,7 +450,7 @@ z77_bd_setup - perform initialization of buffer descriptors this initializes the
     <td>
 
 <p>
-The inverse routine to <a class="el" href="men__16z077__eth_8c.html#a48">z77_open()</a>. 
+The inverse routine to <a class="el" href="men__16z077__eth_8c.html#a55">z77_open()</a>. 
 <p>
 The network interfaces resources are deallocated here<p>
 <dl compact><dt><b>Parameters:</b></dt><dd>
@@ -456,7 +462,7 @@ The network interfaces resources are deallocated here<p>
     </td>
   </tr>
 </table>
-<a name="a96" doxytag="men_16z077_eth.c::z77_do_autonegotiation"></a><p>
+<a name="a106" doxytag="men_16z077_eth.c::z77_do_autonegotiation"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -493,7 +499,109 @@ Do the complete Autonegotiation for the used Ethernet PHY.
     </td>
   </tr>
 </table>
-<a name="a102" doxytag="men_16z077_eth.c::z77_get_mac_from_board_id"></a><p>
+<a name="a123" doxytag="men_16z077_eth.c::z77_eeprod_mac_show"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> ssize_t z77_eeprod_mac_show </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>struct device_attribute *&nbsp;</td>
+          <td class="mdname" nowrap> <em>attr</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>char *&nbsp;</td>
+          <td class="mdname" nowrap> <em>buf</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+attribute function to read MAC from EEPROM 
+<p>
+/OUT MAC address as a string in format 12:56:89:cb:fe:0e<p>
+<dl compact><dt><b>Returns:</b></dt><dd>the string length </dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a124" doxytag="men_16z077_eth.c::z77_eeprod_mac_store"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> ssize_t z77_eeprod_mac_store </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>struct device_attribute *&nbsp;</td>
+          <td class="mdname" nowrap> <em>attr</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>const char *&nbsp;</td>
+          <td class="mdname" nowrap> <em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>size_t&nbsp;</td>
+          <td class="mdname" nowrap> <em>count</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+attribute function to write MAC to EEPROM 
+<p>
+/OUT MAC address as a string in format 12:56:89:cb:fe:0e<p>
+<dl compact><dt><b>Returns:</b></dt><dd>the number of accepted bytes =&gt; will be always equal to count </dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a126" doxytag="men_16z077_eth.c::z77_get_mac_from_board_id"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -530,7 +638,7 @@ finding a board ident EEPROM to read MAC from
     </td>
   </tr>
 </table>
-<a name="a99" doxytag="men_16z077_eth.c::z77_get_oldest_frame"></a><p>
+<a name="a109" doxytag="men_16z077_eth.c::z77_get_oldest_frame"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -578,7 +686,7 @@ This is tailored for the 2 32bit Registers RX0_EMPTY, RX1_EMPTY.<p>
     </td>
   </tr>
 </table>
-<a name="a52" doxytag="men_16z077_eth.c::z77_get_stats"></a><p>
+<a name="a59" doxytag="men_16z077_eth.c::z77_get_stats"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -615,7 +723,428 @@ Get the current statistics.
     </td>
   </tr>
 </table>
-<a name="a61" doxytag="men_16z077_eth.c::z77_init_phymode"></a><p>
+<a name="a114" doxytag="men_16z077_eth.c::z77_i2c_checkAckn"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_checkAckn </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+check the bit for acknowledge Check acknowledge _ __ SDA |___| expected ___ SCL ___| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a111" doxytag="men_16z077_eth.c::z77_i2c_freeBus"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> void z77_i2c_freeBus </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+free the I2C bus Free the bus from busy devices by setting SDA high and clock 20 times. 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+    </td>
+  </tr>
+</table>
+<a name="a116" doxytag="men_16z077_eth.c::z77_i2c_notAckn"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_notAckn </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+set the bit for not acknowledge Set not acknowledge _______ SDA set ___ SCL ___| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a119" doxytag="men_16z077_eth.c::z77_i2c_read_msg"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_read_msg </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>struct z77_i2c_msg_st *&nbsp;</td>
+          <td class="mdname" nowrap> <em>msg</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>int&nbsp;</td>
+          <td class="mdname" nowrap> <em>stop</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+read a defined length of bytes Read a defined length of bytes 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC </td></tr>
+    <tr><td valign=top><em>msg</em>&nbsp;</td><td><b>IN/OUT</b> i2c message struct for this transfer. Received data will be stored in this message </td></tr>
+    <tr><td valign=top><em>stop</em>&nbsp;</td><td><b>IN</b> if stop is set. the access is terminated after the transfer</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a118" doxytag="men_16z077_eth.c::z77_i2c_readByte"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_readByte </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>u8 *&nbsp;</td>
+          <td class="mdname" nowrap> <em>valP</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+read a byte Read a byte _ ___ _ SDA _X___X_ read before SCL risig edge for each bit ___ SCL ___| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a117" doxytag="men_16z077_eth.c::z77_i2c_sendByte"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_sendByte </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>u8&nbsp;</td>
+          <td class="mdname" nowrap> <em>val</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+send a byte Send a byte _ ___ _ SDA _X___X_ set for each bit ___ SCL ___| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a115" doxytag="men_16z077_eth.c::z77_i2c_setAckn"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_setAckn </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+set the bit for acknowledge Set acknowledge _ __ SDA |___| set ___ SCL ___| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a112" doxytag="men_16z077_eth.c::z77_i2c_start"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_start </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+set RESTART condition Set RESTART condition ____ SDA |_ ___ SCL X_| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a113" doxytag="men_16z077_eth.c::z77_i2c_stop"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> int z77_i2c_stop </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
+          <td class="md" valign="top">&nbsp;)&nbsp;</td>
+          <td class="md" nowrap><code> [static]</code></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+set STOP condition Set STOP condition __ SDA X___| ___ SCL X_| 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a120" doxytag="men_16z077_eth.c::z77_i2c_write_msg"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> u32 z77_i2c_write_msg </td>
+          <td class="md" valign="top">(&nbsp;</td>
+          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>const struct z77_i2c_msg_st *&nbsp;</td>
+          <td class="mdname" nowrap> <em>msg</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>int&nbsp;</td>
+          <td class="mdname" nowrap> <em>stop</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"></td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+Write a defined length of bytes Write a defined length of bytes. 
+<p>
+<dl compact><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC </td></tr>
+    <tr><td valign=top><em>msg</em>&nbsp;</td><td><b>IN/OUT</b> i2c message struct for this transfer. Send data will be used from this message </td></tr>
+    <tr><td valign=top><em>stop</em>&nbsp;</td><td><b>IN</b> if stop is set. the access is terminated after the transfer</td></tr>
+  </table>
+</dl>
+<dl compact><dt><b>Returns:</b></dt><dd>0 or error code</dd></dl>
+    </td>
+  </tr>
+</table>
+<a name="a68" doxytag="men_16z077_eth.c::z77_init_phymode"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -662,7 +1191,7 @@ z77_init_phymode - Set Phy Mode and Flags according to given mode
     </td>
   </tr>
 </table>
-<a name="a66" doxytag="men_16z077_eth.c::z77_ioctl"></a><p>
+<a name="a73" doxytag="men_16z077_eth.c::z77_ioctl"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -716,7 +1245,7 @@ ioctl function - interface to applications
     </td>
   </tr>
 </table>
-<a name="a50" doxytag="men_16z077_eth.c::z77_irq"></a><p>
+<a name="a57" doxytag="men_16z077_eth.c::z77_irq"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -763,7 +1292,7 @@ central IRQ handler
     </td>
   </tr>
 </table>
-<a name="a48" doxytag="men_16z077_eth.c::z77_open"></a><p>
+<a name="a55" doxytag="men_16z077_eth.c::z77_open"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -800,7 +1329,7 @@ z77_open - open the ethernet device for first usage Open/initialize the Ethernet
     </td>
   </tr>
 </table>
-<a name="a62" doxytag="men_16z077_eth.c::z77_pass_packet"></a><p>
+<a name="a69" doxytag="men_16z077_eth.c::z77_pass_packet"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -847,7 +1376,7 @@ z77_pass_packet - packet passing function for one ETH frame
     </td>
   </tr>
 </table>
-<a name="a59" doxytag="men_16z077_eth.c::z77_phy_identify"></a><p>
+<a name="a66" doxytag="men_16z077_eth.c::z77_phy_identify"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -894,7 +1423,7 @@ z77_phy_identify - probe the PHY device This routine probes the PHY device by re
     </td>
   </tr>
 </table>
-<a name="a60" doxytag="men_16z077_eth.c::z77_phy_init"></a><p>
+<a name="a67" doxytag="men_16z077_eth.c::z77_phy_init"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -930,7 +1459,7 @@ z77_phy_init - initialize and configure the PHY devices This routine scans, init
     </td>
   </tr>
 </table>
-<a name="a58" doxytag="men_16z077_eth.c::z77_phy_reset"></a><p>
+<a name="a65" doxytag="men_16z077_eth.c::z77_phy_reset"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -978,7 +1507,7 @@ z77_phy_reset This routine send a Reset command to the PHY specified in the para
     </td>
   </tr>
 </table>
-<a name="a56" doxytag="men_16z077_eth.c::z77_poll"></a><p>
+<a name="a63" doxytag="men_16z077_eth.c::z77_poll"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1026,54 +1555,7 @@ this is a softirq so dont use potentially sleeping sys calls!<p>
     </td>
   </tr>
 </table>
-<a name="a101" doxytag="men_16z077_eth.c::z77_read_byte_data"></a><p>
-<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
-  <tr>
-    <td class="mdRow">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="md" nowrap valign="top"> unsigned char z77_read_byte_data </td>
-          <td class="md" valign="top">(&nbsp;</td>
-          <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
-          <td class="mdname" nowrap> <em>dev</em>, </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td class="md" nowrap>unsigned int&nbsp;</td>
-          <td class="mdname" nowrap> <em>offset</em></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td class="md">)&nbsp;</td>
-          <td class="md" colspan="2"><code> [static]</code></td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-<table cellspacing=5 cellpadding=0 border=0>
-  <tr>
-    <td>
-      &nbsp;
-    </td>
-    <td>
-
-<p>
-Read a byte from MAC EEPROM directly attached to this Z87 Every cycle of the SMB access is coded in a descriptive string: S: Start 0: 0 O: Stop 1: 1 R: Read A: Ack (SDA just set high, no check!) W: Write P: Pause 50 us G: Get bit (=reads SDA) Attention: this assumes that exactly one byte is read (8x'G' in a row)! 
-<p>
-<dl compact><dt><b>Parameters:</b></dt><dd>
-  <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign=top><em>dev</em>&nbsp;</td><td><b>IN</b> net_device struct for this NIC </td></tr>
-    <tr><td valign=top><em>offset</em>&nbsp;</td><td><b>IN</b> position of byte to read</td></tr>
-  </table>
-</dl>
-<dl compact><dt><b>Returns:</b></dt><dd>byte value at this offset in EEPROM </dd></dl>
-    </td>
-  </tr>
-</table>
-<a name="a65" doxytag="men_16z077_eth.c::z77_reset"></a><p>
+<a name="a72" doxytag="men_16z077_eth.c::z77_reset"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1109,7 +1591,7 @@ z77_reset - reset device with asynchronous global Reset Register 0x54
     </td>
   </tr>
 </table>
-<a name="a98" doxytag="men_16z077_eth.c::z77_reset_task"></a><p>
+<a name="a108" doxytag="men_16z077_eth.c::z77_reset_task"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1146,7 +1628,7 @@ Timeout handler when no scheduled ETH irq arrived.
     </td>
   </tr>
 </table>
-<a name="a54" doxytag="men_16z077_eth.c::z77_rx_err"></a><p>
+<a name="a61" doxytag="men_16z077_eth.c::z77_rx_err"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1182,7 +1664,7 @@ net_rx_err - irq context handler to report Errors
     </td>
   </tr>
 </table>
-<a name="a49" doxytag="men_16z077_eth.c::z77_send_packet"></a><p>
+<a name="a56" doxytag="men_16z077_eth.c::z77_send_packet"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1229,7 +1711,7 @@ send a ready made ethernet frame
     </td>
   </tr>
 </table>
-<a name="a77" doxytag="men_16z077_eth.c::z77_set_rx_mode"></a><p>
+<a name="a86" doxytag="men_16z077_eth.c::z77_set_rx_mode"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1266,7 +1748,7 @@ The set_multi entry point is called whenever the multicast address list or the n
     </td>
   </tr>
 </table>
-<a name="a76" doxytag="men_16z077_eth.c::z77_store_mac"></a><p>
+<a name="a85" doxytag="men_16z077_eth.c::z77_store_mac"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1302,7 +1784,7 @@ Write MAC address from struct net to Registers MAC_ADDR0/1.
     </td>
   </tr>
 </table>
-<a name="a104" doxytag="men_16z077_eth.c::z77_tx"></a><p>
+<a name="a128" doxytag="men_16z077_eth.c::z77_tx"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1313,7 +1795,7 @@ Write MAC address from struct net to Registers MAC_ADDR0/1.
           <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
           <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
           <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap></td>
+          <td class="md" nowrap><code> [static]</code></td>
         </tr>
 
       </table>
@@ -1339,7 +1821,7 @@ The interrupt context Tx packet handler Called from within main ISR context. unm
     </td>
   </tr>
 </table>
-<a name="a55" doxytag="men_16z077_eth.c::z77_tx_err"></a><p>
+<a name="a62" doxytag="men_16z077_eth.c::z77_tx_err"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
@@ -1375,7 +1857,7 @@ net_tx_err - irq context handler to report Errors
     </td>
   </tr>
 </table>
-<a name="a53" doxytag="men_16z077_eth.c::z77_tx_timeout"></a><p>
+<a name="a60" doxytag="men_16z077_eth.c::z77_tx_timeout"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">

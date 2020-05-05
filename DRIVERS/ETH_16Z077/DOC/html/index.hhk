@@ -286,11 +286,11 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="chipset_init"><param name="Name" value="chipset_init"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a103"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a127"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="cleanup_card"><param name="Name" value="cleanup_card"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a97"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a107"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="ETHT_MESSAGE_LVL1"><param name="Name" value="ETHT_MESSAGE_LVL1"></OBJECT>
   <UL>
@@ -330,61 +330,75 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="lock"><param name="Name" value="lock"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o25"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o23"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="mcast_lst"><param name="Name" value="mcast_lst"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o21"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o19"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a103"><param name="Name" value="chipset_init"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a97"><param name="Name" value="cleanup_card"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a108"><param name="Name" value="men_16z077_init"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a105"><param name="Name" value="men_16z077_probe"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a106"><param name="Name" value="men_16z077_remove"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a100"><param name="Name" value="smb_cycle"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a95"><param name="Name" value="z77_bd_setup"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a51"><param name="Name" value="z77_close"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a96"><param name="Name" value="z77_do_autonegotiation"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a102"><param name="Name" value="z77_get_mac_from_board_id"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a99"><param name="Name" value="z77_get_oldest_frame"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a52"><param name="Name" value="z77_get_stats"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a61"><param name="Name" value="z77_init_phymode"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a66"><param name="Name" value="z77_ioctl"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a50"><param name="Name" value="z77_irq"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a48"><param name="Name" value="z77_open"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a62"><param name="Name" value="z77_pass_packet"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a59"><param name="Name" value="z77_phy_identify"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a60"><param name="Name" value="z77_phy_init"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a58"><param name="Name" value="z77_phy_reset"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a56"><param name="Name" value="z77_poll"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a101"><param name="Name" value="z77_read_byte_data"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a65"><param name="Name" value="z77_reset"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a98"><param name="Name" value="z77_reset_task"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a54"><param name="Name" value="z77_rx_err"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a49"><param name="Name" value="z77_send_packet"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a77"><param name="Name" value="z77_set_rx_mode"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a76"><param name="Name" value="z77_store_mac"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a104"><param name="Name" value="z77_tx"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a55"><param name="Name" value="z77_tx_err"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a53"><param name="Name" value="z77_tx_timeout"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a127"><param name="Name" value="chipset_init"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a107"><param name="Name" value="cleanup_card"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a132"><param name="Name" value="men_16z077_init"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a129"><param name="Name" value="men_16z077_probe"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a130"><param name="Name" value="men_16z077_remove"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a105"><param name="Name" value="z77_bd_setup"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a58"><param name="Name" value="z77_close"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a106"><param name="Name" value="z77_do_autonegotiation"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a123"><param name="Name" value="z77_eeprod_mac_show"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a124"><param name="Name" value="z77_eeprod_mac_store"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a126"><param name="Name" value="z77_get_mac_from_board_id"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a109"><param name="Name" value="z77_get_oldest_frame"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a59"><param name="Name" value="z77_get_stats"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a114"><param name="Name" value="z77_i2c_checkAckn"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a111"><param name="Name" value="z77_i2c_freeBus"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a116"><param name="Name" value="z77_i2c_notAckn"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a119"><param name="Name" value="z77_i2c_read_msg"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a118"><param name="Name" value="z77_i2c_readByte"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a117"><param name="Name" value="z77_i2c_sendByte"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a115"><param name="Name" value="z77_i2c_setAckn"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a112"><param name="Name" value="z77_i2c_start"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a113"><param name="Name" value="z77_i2c_stop"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a120"><param name="Name" value="z77_i2c_write_msg"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a68"><param name="Name" value="z77_init_phymode"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a73"><param name="Name" value="z77_ioctl"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a57"><param name="Name" value="z77_irq"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a55"><param name="Name" value="z77_open"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a69"><param name="Name" value="z77_pass_packet"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a66"><param name="Name" value="z77_phy_identify"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a67"><param name="Name" value="z77_phy_init"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a65"><param name="Name" value="z77_phy_reset"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a63"><param name="Name" value="z77_poll"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a72"><param name="Name" value="z77_reset"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a108"><param name="Name" value="z77_reset_task"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a61"><param name="Name" value="z77_rx_err"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a56"><param name="Name" value="z77_send_packet"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a86"><param name="Name" value="z77_set_rx_mode"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a85"><param name="Name" value="z77_store_mac"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a128"><param name="Name" value="z77_tx"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a62"><param name="Name" value="z77_tx_err"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a60"><param name="Name" value="z77_tx_timeout"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="men_16z077_init"><param name="Name" value="men_16z077_init"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a108"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a132"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="men_16z077_probe"><param name="Name" value="men_16z077_probe"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a105"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a129"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="men_16z077_remove"><param name="Name" value="men_16z077_remove"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a106"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a130"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="mii_if"><param name="Name" value="mii_if"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o27"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o25"><param name="Name" value="z77_private"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="mii_lock"><param name="Name" value="mii_lock"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o26"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="modCode"><param name="Name" value="modCode"></OBJECT>
   <UL>
@@ -392,7 +406,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="msg_enable"><param name="Name" value="msg_enable"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o28"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o27"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="MY_TX_TIMEOUT"><param name="Name" value="MY_TX_TIMEOUT"></OBJECT>
   <UL>
@@ -405,7 +419,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="napi"><param name="Name" value="napi"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o29"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o28"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="nCurrTbd"><param name="Name" value="nCurrTbd"></OBJECT>
   <UL>
@@ -713,7 +727,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="pdev"><param name="Name" value="pdev"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o26"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o24"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="structphy__device__tbl.html"><param name="Name" value="phy_device_tbl"></OBJECT>
   <UL>
@@ -730,7 +744,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="prev_linkstate"><param name="Name" value="prev_linkstate"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o20"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o18"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="RBD_OFF"><param name="Name" value="RBD_OFF"></OBJECT>
   <UL>
@@ -758,31 +772,19 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="reset_task"><param name="Name" value="reset_task"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o18"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o16"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="rxBd"><param name="Name" value="rxBd"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o23"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o21"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="serialnr"><param name="Name" value="serialnr"></OBJECT>
   <UL>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o14"><param name="Name" value="z77_private"></OBJECT>
   </UL>
-  <LI><OBJECT type="text/sitemap"><param name="See Also" value="smb2desc"><param name="Name" value="smb2desc"></OBJECT>
-  <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o16"><param name="Name" value="z77_private"></OBJECT>
-  </UL>
-  <LI><OBJECT type="text/sitemap"><param name="See Also" value="smb_cycle"><param name="Name" value="smb_cycle"></OBJECT>
-  <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a100"><param name="Name" value="men_16z077_eth.c"></OBJECT>
-  </UL>
-  <LI><OBJECT type="text/sitemap"><param name="See Also" value="smbHdlP"><param name="Name" value="smbHdlP"></OBJECT>
-  <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o17"><param name="Name" value="z77_private"></OBJECT>
-  </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="stats"><param name="Name" value="stats"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o24"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o22"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="TBD_OFF"><param name="Name" value="TBD_OFF"></OBJECT>
   <UL>
@@ -794,11 +796,11 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="timer"><param name="Name" value="timer"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o19"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o17"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="txBd"><param name="Name" value="txBd"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o22"><param name="Name" value="z77_private"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o20"><param name="Name" value="z77_private"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="txIrq"><param name="Name" value="txIrq"></OBJECT>
   <UL>
@@ -1162,7 +1164,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_bd_setup"><param name="Name" value="z77_bd_setup"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a95"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a105"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="Z77_CFGREG_SIZE"><param name="Name" value="Z77_CFGREG_SIZE"></OBJECT>
   <UL>
@@ -1170,11 +1172,19 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_close"><param name="Name" value="z77_close"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a51"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a58"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_do_autonegotiation"><param name="Name" value="z77_do_autonegotiation"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a96"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a106"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_eeprod_mac_show"><param name="Name" value="z77_eeprod_mac_show"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a123"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_eeprod_mac_store"><param name="Name" value="z77_eeprod_mac_store"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a124"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="Z77_ETHBUF_SIZE"><param name="Name" value="Z77_ETHBUF_SIZE"></OBJECT>
   <UL>
@@ -1182,27 +1192,67 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_get_mac_from_board_id"><param name="Name" value="z77_get_mac_from_board_id"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a102"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a126"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_get_oldest_frame"><param name="Name" value="z77_get_oldest_frame"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a99"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a109"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_get_stats"><param name="Name" value="z77_get_stats"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a52"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a59"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_checkAckn"><param name="Name" value="z77_i2c_checkAckn"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a114"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_freeBus"><param name="Name" value="z77_i2c_freeBus"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a111"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_notAckn"><param name="Name" value="z77_i2c_notAckn"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a116"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_read_msg"><param name="Name" value="z77_i2c_read_msg"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a119"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_readByte"><param name="Name" value="z77_i2c_readByte"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a118"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_sendByte"><param name="Name" value="z77_i2c_sendByte"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a117"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_setAckn"><param name="Name" value="z77_i2c_setAckn"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a115"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_start"><param name="Name" value="z77_i2c_start"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a112"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_stop"><param name="Name" value="z77_i2c_stop"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a113"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+  </UL>
+  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_i2c_write_msg"><param name="Name" value="z77_i2c_write_msg"></OBJECT>
+  <UL>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a120"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_init_phymode"><param name="Name" value="z77_init_phymode"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a61"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a68"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_ioctl"><param name="Name" value="z77_ioctl"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a66"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a73"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_irq"><param name="Name" value="z77_irq"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a50"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a57"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="Z77_MAC_OFFS_F11S"><param name="Name" value="Z77_MAC_OFFS_F11S"></OBJECT>
   <UL>
@@ -1230,7 +1280,7 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_open"><param name="Name" value="z77_open"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a48"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a55"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="Z77_PACKLEN_DEFAULT"><param name="Name" value="Z77_PACKLEN_DEFAULT"></OBJECT>
   <UL>
@@ -1238,23 +1288,23 @@
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_pass_packet"><param name="Name" value="z77_pass_packet"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a62"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a69"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_phy_identify"><param name="Name" value="z77_phy_identify"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a59"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a66"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_phy_init"><param name="Name" value="z77_phy_init"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a60"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a67"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_phy_reset"><param name="Name" value="z77_phy_reset"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a58"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a65"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_poll"><param name="Name" value="z77_poll"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a56"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a63"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html"><param name="Name" value="z77_private"></OBJECT>
   <UL>
@@ -1264,67 +1314,62 @@
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o1"><param name="Name" value="flags"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o2"><param name="Name" value="instance"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o4"><param name="Name" value="instCount"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o25"><param name="Name" value="lock"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o21"><param name="Name" value="mcast_lst"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o27"><param name="Name" value="mii_if"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o23"><param name="Name" value="lock"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o19"><param name="Name" value="mcast_lst"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o25"><param name="Name" value="mii_if"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o26"><param name="Name" value="mii_lock"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o7"><param name="Name" value="modCode"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o28"><param name="Name" value="msg_enable"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o29"><param name="Name" value="napi"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o27"><param name="Name" value="msg_enable"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o28"><param name="Name" value="napi"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o5"><param name="Name" value="nCurrTbd"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o0"><param name="Name" value="open_time"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o26"><param name="Name" value="pdev"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o24"><param name="Name" value="pdev"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o3"><param name="Name" value="phymode"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o10"><param name="Name" value="pollInProgress"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o20"><param name="Name" value="prev_linkstate"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o18"><param name="Name" value="prev_linkstate"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o13"><param name="Name" value="rbdOff"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o18"><param name="Name" value="reset_task"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o23"><param name="Name" value="rxBd"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o16"><param name="Name" value="reset_task"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o21"><param name="Name" value="rxBd"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o14"><param name="Name" value="serialnr"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o16"><param name="Name" value="smb2desc"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o17"><param name="Name" value="smbHdlP"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o24"><param name="Name" value="stats"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o22"><param name="Name" value="stats"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o12"><param name="Name" value="tbdOff"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o19"><param name="Name" value="timer"></OBJECT>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o22"><param name="Name" value="txBd"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o17"><param name="Name" value="timer"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o20"><param name="Name" value="txBd"></OBJECT>
     <LI><OBJECT type="text/sitemap"><param name="Local" value="structz77__private.html#o6"><param name="Name" value="txIrq"></OBJECT>
-  </UL>
-  <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_read_byte_data"><param name="Name" value="z77_read_byte_data"></OBJECT>
-  <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a101"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_reset"><param name="Name" value="z77_reset"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a65"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a72"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_reset_task"><param name="Name" value="z77_reset_task"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a98"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a108"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_rx_err"><param name="Name" value="z77_rx_err"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a54"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a61"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_send_packet"><param name="Name" value="z77_send_packet"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a49"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a56"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_set_rx_mode"><param name="Name" value="z77_set_rx_mode"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a77"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a86"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_store_mac"><param name="Name" value="z77_store_mac"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a76"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a85"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_tx"><param name="Name" value="z77_tx"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a104"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a128"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_tx_err"><param name="Name" value="z77_tx_err"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a55"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a62"><param name="Name" value="men_16z077_eth.c"></OBJECT>
   </UL>
   <LI><OBJECT type="text/sitemap"><param name="See Also" value="z77_tx_timeout"><param name="Name" value="z77_tx_timeout"></OBJECT>
   <UL>
-    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a53"><param name="Name" value="men_16z077_eth.c"></OBJECT>
+    <LI><OBJECT type="text/sitemap"><param name="Local" value="men__16z077__eth_8c.html#a60"><param name="Name" value="men_16z077_eth.c"></OBJECT>
 </UL>

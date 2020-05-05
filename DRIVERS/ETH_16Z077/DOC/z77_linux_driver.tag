@@ -14,203 +14,294 @@
     <name>men_16z077_eth.c</name>
     <path>/opt/menlinux/DRIVERS/ETH_16Z077/DRIVER/</path>
     <filename>men__16z077__eth_8c</filename>
+    <class kind="struct">z77_i2c_msg_st</class>
     <class kind="struct">z77_private</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>I2C_M_TEN</name>
+      <anchor>a27</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>I2C_M_WR</name>
+      <anchor>a28</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>I2C_M_RD</name>
+      <anchor>a29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>I2C_M_NOSTART</name>
+      <anchor>a30</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_open</name>
-      <anchor>a48</anchor>
-      <arglist>(struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>int</type>
-      <name>z77_send_packet</name>
-      <anchor>a49</anchor>
-      <arglist>(struct sk_buff *skb, struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>irqreturn_t</type>
-      <name>z77_irq</name>
-      <anchor>a50</anchor>
-      <arglist>(int irq, void *dev_id)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>int</type>
-      <name>z77_close</name>
-      <anchor>a51</anchor>
-      <arglist>(struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>net_device_stats *</type>
-      <name>z77_get_stats</name>
-      <anchor>a52</anchor>
-      <arglist>(struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>void</type>
-      <name>z77_tx_timeout</name>
-      <anchor>a53</anchor>
-      <arglist>(struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>void</type>
-      <name>z77_rx_err</name>
-      <anchor>a54</anchor>
-      <arglist>(struct net_device *dev)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>void</type>
-      <name>z77_tx_err</name>
       <anchor>a55</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
-      <name>z77_poll</name>
+      <name>z77_send_packet</name>
       <anchor>a56</anchor>
+      <arglist>(struct sk_buff *skb, struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>irqreturn_t</type>
+      <name>z77_irq</name>
+      <anchor>a57</anchor>
+      <arglist>(int irq, void *dev_id)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_close</name>
+      <anchor>a58</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>net_device_stats *</type>
+      <name>z77_get_stats</name>
+      <anchor>a59</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>void</type>
+      <name>z77_tx_timeout</name>
+      <anchor>a60</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>void</type>
+      <name>z77_rx_err</name>
+      <anchor>a61</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>void</type>
+      <name>z77_tx_err</name>
+      <anchor>a62</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_poll</name>
+      <anchor>a63</anchor>
       <arglist>(struct napi_struct *napi, int budget)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_phy_reset</name>
-      <anchor>a58</anchor>
+      <anchor>a65</anchor>
       <arglist>(struct net_device *dev, u8 phyAddr)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_phy_identify</name>
-      <anchor>a59</anchor>
+      <anchor>a66</anchor>
       <arglist>(struct net_device *dev, u8 phyAddr)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_phy_init</name>
-      <anchor>a60</anchor>
+      <anchor>a67</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_init_phymode</name>
-      <anchor>a61</anchor>
+      <anchor>a68</anchor>
       <arglist>(struct net_device *dev, u8 phyAddr)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>z77_pass_packet</name>
-      <anchor>a62</anchor>
+      <anchor>a69</anchor>
       <arglist>(struct net_device *dev, unsigned int idx)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>z77_reset</name>
-      <anchor>a65</anchor>
+      <anchor>a72</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_ioctl</name>
-      <anchor>a66</anchor>
+      <anchor>a73</anchor>
       <arglist>(struct net_device *dev, struct ifreq *ifr, int cmd)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>z77_store_mac</name>
-      <anchor>a76</anchor>
+      <anchor>a85</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>z77_set_rx_mode</name>
-      <anchor>a77</anchor>
+      <anchor>a86</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_bd_setup</name>
-      <anchor>a95</anchor>
+      <anchor>a105</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_do_autonegotiation</name>
-      <anchor>a96</anchor>
+      <anchor>a106</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>cleanup_card</name>
-      <anchor>a97</anchor>
+      <anchor>a107</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
       <name>z77_reset_task</name>
-      <anchor>a98</anchor>
+      <anchor>a108</anchor>
       <arglist>(struct work_struct *work)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>u32</type>
       <name>z77_get_oldest_frame</name>
-      <anchor>a99</anchor>
+      <anchor>a109</anchor>
       <arglist>(u32 rx0, u32 rx1, u32 *nrframes)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>unsigned int</type>
-      <name>smb_cycle</name>
-      <anchor>a100</anchor>
-      <arglist>(struct net_device *dev, unsigned char c)</arglist>
+      <type>void</type>
+      <name>z77_i2c_delay</name>
+      <anchor>a110</anchor>
+      <arglist>(void)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>unsigned char</type>
-      <name>z77_read_byte_data</name>
-      <anchor>a101</anchor>
-      <arglist>(struct net_device *dev, unsigned int offset)</arglist>
+      <type>void</type>
+      <name>z77_i2c_freeBus</name>
+      <anchor>a111</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_start</name>
+      <anchor>a112</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_stop</name>
+      <anchor>a113</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_checkAckn</name>
+      <anchor>a114</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_setAckn</name>
+      <anchor>a115</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_notAckn</name>
+      <anchor>a116</anchor>
+      <arglist>(struct net_device *dev)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_sendByte</name>
+      <anchor>a117</anchor>
+      <arglist>(struct net_device *dev, u8 val)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>int</type>
+      <name>z77_i2c_readByte</name>
+      <anchor>a118</anchor>
+      <arglist>(struct net_device *dev, u8 *valP)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>z77_i2c_read_msg</name>
+      <anchor>a119</anchor>
+      <arglist>(struct net_device *dev, struct z77_i2c_msg_st *msg, int stop)</arglist>
+    </member>
+    <member kind="function">
+      <type>u32</type>
+      <name>z77_i2c_write_msg</name>
+      <anchor>a120</anchor>
+      <arglist>(struct net_device *dev, const struct z77_i2c_msg_st *msg, int stop)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>ssize_t</type>
+      <name>z77_eeprod_mac_show</name>
+      <anchor>a123</anchor>
+      <arglist>(struct device *dev, struct device_attribute *attr, char *buf)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>ssize_t</type>
+      <name>z77_eeprod_mac_store</name>
+      <anchor>a124</anchor>
+      <arglist>(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>z77_get_mac_from_board_id</name>
-      <anchor>a102</anchor>
+      <anchor>a126</anchor>
       <arglist>(u8 *mac)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>chipset_init</name>
-      <anchor>a103</anchor>
+      <anchor>a127</anchor>
       <arglist>(struct net_device *dev, u32 first_init)</arglist>
     </member>
-    <member kind="function">
+    <member kind="function" static="yes">
       <type>void</type>
       <name>z77_tx</name>
-      <anchor>a104</anchor>
+      <anchor>a128</anchor>
       <arglist>(struct net_device *dev)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>men_16z077_probe</name>
-      <anchor>a105</anchor>
+      <anchor>a129</anchor>
       <arglist>(CHAMELEON_UNIT_T *chu)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int</type>
       <name>men_16z077_remove</name>
-      <anchor>a106</anchor>
+      <anchor>a130</anchor>
       <arglist>(CHAMELEON_UNIT_T *chu)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void __exit</type>
       <name>men_16z077_cleanup</name>
-      <anchor>a107</anchor>
+      <anchor>a131</anchor>
       <arglist>(void)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>int __init</type>
       <name>men_16z077_init</name>
-      <anchor>a108</anchor>
+      <anchor>a132</anchor>
       <arglist>(void)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>ethtool_ops</type>
       <name>z77_ethtool_ops</name>
-      <anchor>a40</anchor>
+      <anchor>a47</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -368,87 +459,81 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>SMB_DESC_PORTCB</type>
-      <name>smb2desc</name>
-      <anchor>o16</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>smbHdlP</name>
-      <anchor>o17</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
       <type>work_struct</type>
       <name>reset_task</name>
-      <anchor>o18</anchor>
+      <anchor>o16</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>timer_list</type>
       <name>timer</name>
-      <anchor>o19</anchor>
+      <anchor>o17</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>u32</type>
       <name>prev_linkstate</name>
-      <anchor>o20</anchor>
+      <anchor>o18</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>u8</type>
       <name>mcast_lst</name>
-      <anchor>o21</anchor>
+      <anchor>o19</anchor>
       <arglist>[MAX_MCAST_LST][MAC_ADDR_LEN]</arglist>
     </member>
     <member kind="variable">
       <type>Z077_BD</type>
       <name>txBd</name>
-      <anchor>o22</anchor>
+      <anchor>o20</anchor>
       <arglist>[Z077_TBD_NUM]</arglist>
     </member>
     <member kind="variable">
       <type>Z077_BD</type>
       <name>rxBd</name>
-      <anchor>o23</anchor>
+      <anchor>o21</anchor>
       <arglist>[Z077_RBD_NUM]</arglist>
     </member>
     <member kind="variable">
       <type>net_device_stats</type>
       <name>stats</name>
-      <anchor>o24</anchor>
+      <anchor>o22</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>spinlock_t</type>
       <name>lock</name>
-      <anchor>o25</anchor>
+      <anchor>o23</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>pci_dev *</type>
       <name>pdev</name>
-      <anchor>o26</anchor>
+      <anchor>o24</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>mii_if_info</type>
       <name>mii_if</name>
-      <anchor>o27</anchor>
+      <anchor>o25</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>spinlock_t</type>
+      <name>mii_lock</name>
+      <anchor>o26</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>u32</type>
       <name>msg_enable</name>
-      <anchor>o28</anchor>
+      <anchor>o27</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>napi_struct</type>
       <name>napi</name>
-      <anchor>o29</anchor>
+      <anchor>o28</anchor>
       <arglist></arglist>
     </member>
   </compound>
