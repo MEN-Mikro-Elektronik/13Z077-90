@@ -3342,8 +3342,13 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	}
 
 	phys_addr = pci_resource_start(chu->pdev, chu->bar) + chu->offset;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
+	dev->base_addr = (unsigned long)ioremap(phys_addr,
+			(u32)Z77_CFGREG_SIZE );
+#else
 	dev->base_addr = (unsigned long)ioremap_nocache(phys_addr,
 			(u32)Z77_CFGREG_SIZE );
+#endif
 	dev->irq = chu->irq;
 
 	if( dev_alloc_name( dev, "eth%d") < 0)
