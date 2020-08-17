@@ -252,7 +252,11 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev);
 static irqreturn_t z77_irq(int irq, void *dev_id);
 static int z77_close(struct net_device *dev);
 static struct net_device_stats *z77_get_stats(struct net_device *dev);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+static void z77_tx_timeout(struct net_device *dev, unsigned int txqueue);
+#else
 static void z77_tx_timeout(struct net_device *dev);
+#endif
 static void z77_rx_err(struct net_device *dev );
 static void z77_tx_err(struct net_device *dev );
 static int z77_poll(struct napi_struct *napi,int budget);
@@ -1981,7 +1985,11 @@ static void z77_reset_task(struct work_struct *work)
  *
  * \return -
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+static void z77_tx_timeout(struct net_device *dev, unsigned int txqueue)
+#else
 static void z77_tx_timeout(struct net_device *dev)
+#endif
 {
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL1, "z77_tx_timeout called!\n");
