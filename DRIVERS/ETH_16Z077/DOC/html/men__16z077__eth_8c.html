@@ -66,7 +66,7 @@
 <tr><td class="memItemLeft" nowrap align=right valign=top>net_device_stats *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a59">z77_get_stats</a> (struct net_device *dev)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the current statistics. </em> <a href="#a59"></a><em><br><br></td></tr>
-<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a60">z77_tx_timeout</a> (struct net_device *dev)</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a60">z77_tx_timeout</a> (struct net_device *dev, unsigned int txqueue)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Timeout handler when no scheduled ETH irq arrived. </em> <a href="#a60"></a><em><br><br></td></tr>
 <tr><td class="memItemLeft" nowrap align=right valign=top>void&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="men__16z077__eth_8c.html#a61">z77_rx_err</a> (struct net_device *dev)</td></tr>
@@ -1866,9 +1866,18 @@ net_tx_err - irq context handler to report Errors
           <td class="md" nowrap valign="top"> void z77_tx_timeout </td>
           <td class="md" valign="top">(&nbsp;</td>
           <td class="md" nowrap valign="top">struct net_device *&nbsp;</td>
-          <td class="mdname1" valign="top" nowrap> <em>dev</em>          </td>
-          <td class="md" valign="top">&nbsp;)&nbsp;</td>
-          <td class="md" nowrap><code> [static]</code></td>
+          <td class="mdname" nowrap> <em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td class="md" nowrap>unsigned int&nbsp;</td>
+          <td class="mdname" nowrap> <em>txqueue</em></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="md">)&nbsp;</td>
+          <td class="md" colspan="2"><code> [static]</code></td>
         </tr>
 
       </table>

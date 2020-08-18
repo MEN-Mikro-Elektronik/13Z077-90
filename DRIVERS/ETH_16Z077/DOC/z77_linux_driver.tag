@@ -74,7 +74,7 @@
       <type>void</type>
       <name>z77_tx_timeout</name>
       <anchor>a60</anchor>
-      <arglist>(struct net_device *dev)</arglist>
+      <arglist>(struct net_device *dev, unsigned int txqueue)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>void</type>
