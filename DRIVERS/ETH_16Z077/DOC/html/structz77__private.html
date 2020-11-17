@@ -58,33 +58,31 @@
 
 <tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o15">board</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>SMB_DESC_PORTCB&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o16">smb2desc</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>work_struct&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o16">reset_task</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>void *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o17">smbHdlP</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>timer_list&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o17">timer</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>work_struct&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o18">reset_task</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o18">prev_linkstate</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>timer_list&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o19">timer</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>u8&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o19">mcast_lst</a> [MAX_MCAST_LST][MAC_ADDR_LEN]</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o20">prev_linkstate</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a class="el" href="structz077__bd.html">Z077_BD</a>&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o20">txBd</a> [Z077_TBD_NUM]</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>u8&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o21">mcast_lst</a> [MAX_MCAST_LST][MAC_ADDR_LEN]</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top><a class="el" href="structz077__bd.html">Z077_BD</a>&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o21">rxBd</a> [Z077_RBD_NUM]</td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top><a class="el" href="structz077__bd.html">Z077_BD</a>&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o22">txBd</a> [Z077_TBD_NUM]</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>net_device_stats&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o22">stats</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top><a class="el" href="structz077__bd.html">Z077_BD</a>&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o23">rxBd</a> [Z077_RBD_NUM]</td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>spinlock_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o23">lock</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>net_device_stats&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o24">stats</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>pci_dev *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o24">pdev</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>spinlock_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o25">lock</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>mii_if_info&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o25">mii_if</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>pci_dev *&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o26">pdev</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>spinlock_t&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o26">mii_lock</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>mii_if_info&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o27">mii_if</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o27">msg_enable</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align=right valign=top>u32&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o28">msg_enable</a></td></tr>
-
-<tr><td class="memItemLeft" nowrap align=right valign=top>napi_struct&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o29">napi</a></td></tr>
+<tr><td class="memItemLeft" nowrap align=right valign=top>napi_struct&nbsp;</td><td class="memItemRight" valign=bottom><a class="el" href="structz77__private.html#o28">napi</a></td></tr>
 
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
@@ -155,7 +153,7 @@ TX Buffer offset to phys base     </td>
     <td>
 
 <p>
-SMB2 descriptor for EEPROM     </td>
+process context resetting (ndo_tx_timeout)     </td>
   </tr>
 </table>
 <a name="o1" doxytag="z77_private::flags"></a><p>
@@ -224,13 +222,13 @@ chameleon instance if more Z87     </td>
 currently used Tx BD     </td>
   </tr>
 </table>
-<a name="o25" doxytag="z77_private::lock"></a><p>
+<a name="o23" doxytag="z77_private::lock"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> spinlock_t <a class="el" href="structz77__private.html#o25">z77_private::lock</a>
+          <td class="md" nowrap valign="top"> spinlock_t <a class="el" href="structz77__private.html#o23">z77_private::lock</a>
       </table>
     </td>
   </tr>
@@ -246,13 +244,13 @@ currently used Tx BD     </td>
 the pci device we belong to     </td>
   </tr>
 </table>
-<a name="o21" doxytag="z77_private::mcast_lst"></a><p>
+<a name="o19" doxytag="z77_private::mcast_lst"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> u8 <a class="el" href="structz77__private.html#o21">z77_private::mcast_lst</a>[MAX_MCAST_LST][MAC_ADDR_LEN]
+          <td class="md" nowrap valign="top"> u8 <a class="el" href="structz77__private.html#o19">z77_private::mcast_lst</a>[MAX_MCAST_LST][MAC_ADDR_LEN]
       </table>
     </td>
   </tr>
@@ -268,13 +266,35 @@ the pci device we belong to     </td>
 Tx Buffer Descriptor address     </td>
   </tr>
 </table>
-<a name="o27" doxytag="z77_private::mii_if"></a><p>
+<a name="o25" doxytag="z77_private::mii_if"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> struct mii_if_info <a class="el" href="structz77__private.html#o27">z77_private::mii_if</a>
+          <td class="md" nowrap valign="top"> struct mii_if_info <a class="el" href="structz77__private.html#o25">z77_private::mii_if</a>
+      </table>
+    </td>
+  </tr>
+</table>
+<table cellspacing=5 cellpadding=0 border=0>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+    <td>
+
+<p>
+prevent concurrent accesses on mii interface     </td>
+  </tr>
+</table>
+<a name="o26" doxytag="z77_private::mii_lock"></a><p>
+<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td class="mdRow">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="md" nowrap valign="top"> spinlock_t <a class="el" href="structz77__private.html#o26">z77_private::mii_lock</a>
       </table>
     </td>
   </tr>
@@ -312,13 +332,13 @@ debug message level     </td>
 start address of BDs in RAM     </td>
   </tr>
 </table>
-<a name="o28" doxytag="z77_private::msg_enable"></a><p>
+<a name="o27" doxytag="z77_private::msg_enable"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> u32 <a class="el" href="structz77__private.html#o28">z77_private::msg_enable</a>
+          <td class="md" nowrap valign="top"> u32 <a class="el" href="structz77__private.html#o27">z77_private::msg_enable</a>
       </table>
     </td>
   </tr>
@@ -334,13 +354,13 @@ start address of BDs in RAM     </td>
 NAPI struct     </td>
   </tr>
 </table>
-<a name="o29" doxytag="z77_private::napi"></a><p>
+<a name="o28" doxytag="z77_private::napi"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> struct napi_struct <a class="el" href="structz77__private.html#o29">z77_private::napi</a>
+          <td class="md" nowrap valign="top"> struct napi_struct <a class="el" href="structz77__private.html#o28">z77_private::napi</a>
       </table>
     </td>
   </tr>
@@ -400,13 +420,13 @@ last serviced TX IRQ     </td>
 Our local flags     </td>
   </tr>
 </table>
-<a name="o26" doxytag="z77_private::pdev"></a><p>
+<a name="o24" doxytag="z77_private::pdev"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> struct pci_dev* <a class="el" href="structz77__private.html#o26">z77_private::pdev</a>
+          <td class="md" nowrap valign="top"> struct pci_dev* <a class="el" href="structz77__private.html#o24">z77_private::pdev</a>
       </table>
     </td>
   </tr>
@@ -466,13 +486,13 @@ global probe cnt. for phyadr[]     </td>
 BDoffset from BAR start     </td>
   </tr>
 </table>
-<a name="o20" doxytag="z77_private::prev_linkstate"></a><p>
+<a name="o18" doxytag="z77_private::prev_linkstate"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> u32 <a class="el" href="structz77__private.html#o20">z77_private::prev_linkstate</a>
+          <td class="md" nowrap valign="top"> u32 <a class="el" href="structz77__private.html#o18">z77_private::prev_linkstate</a>
       </table>
     </td>
   </tr>
@@ -510,13 +530,13 @@ store Mcast addrs     </td>
 serial nr. of P51x or MM1     </td>
   </tr>
 </table>
-<a name="o18" doxytag="z77_private::reset_task"></a><p>
+<a name="o16" doxytag="z77_private::reset_task"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> struct work_struct <a class="el" href="structz77__private.html#o18">z77_private::reset_task</a>
+          <td class="md" nowrap valign="top"> struct work_struct <a class="el" href="structz77__private.html#o16">z77_private::reset_task</a>
       </table>
     </td>
   </tr>
@@ -532,13 +552,13 @@ serial nr. of P51x or MM1     </td>
 period timer for linkchange poll     </td>
   </tr>
 </table>
-<a name="o23" doxytag="z77_private::rxBd"></a><p>
+<a name="o21" doxytag="z77_private::rxBd"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> <a class="el" href="structz077__bd.html">Z077_BD</a> <a class="el" href="structz77__private.html#o23">z77_private::rxBd</a>[Z077_RBD_NUM]
+          <td class="md" nowrap valign="top"> <a class="el" href="structz077__bd.html">Z077_BD</a> <a class="el" href="structz77__private.html#o21">z77_private::rxBd</a>[Z077_RBD_NUM]
       </table>
     </td>
   </tr>
@@ -576,57 +596,13 @@ status flags to report to IP     </td>
 board identifier of this eth     </td>
   </tr>
 </table>
-<a name="o16" doxytag="z77_private::smb2desc"></a><p>
+<a name="o22" doxytag="z77_private::stats"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> SMB_DESC_PORTCB <a class="el" href="structz77__private.html#o16">z77_private::smb2desc</a>
-      </table>
-    </td>
-  </tr>
-</table>
-<table cellspacing=5 cellpadding=0 border=0>
-  <tr>
-    <td>
-      &nbsp;
-    </td>
-    <td>
-
-<p>
-SMB2 Handle     </td>
-  </tr>
-</table>
-<a name="o17" doxytag="z77_private::smbHdlP"></a><p>
-<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
-  <tr>
-    <td class="mdRow">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="md" nowrap valign="top"> void* <a class="el" href="structz77__private.html#o17">z77_private::smbHdlP</a>
-      </table>
-    </td>
-  </tr>
-</table>
-<table cellspacing=5 cellpadding=0 border=0>
-  <tr>
-    <td>
-      &nbsp;
-    </td>
-    <td>
-
-<p>
-process context resetting (ndo_tx_timeout)     </td>
-  </tr>
-</table>
-<a name="o24" doxytag="z77_private::stats"></a><p>
-<table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
-  <tr>
-    <td class="mdRow">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="md" nowrap valign="top"> struct net_device_stats <a class="el" href="structz77__private.html#o24">z77_private::stats</a>
+          <td class="md" nowrap valign="top"> struct net_device_stats <a class="el" href="structz77__private.html#o22">z77_private::stats</a>
       </table>
     </td>
   </tr>
@@ -664,13 +640,13 @@ prevent concurrent accesses     </td>
 TX Buffer offset to phys base     </td>
   </tr>
 </table>
-<a name="o19" doxytag="z77_private::timer"></a><p>
+<a name="o17" doxytag="z77_private::timer"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> struct timer_list <a class="el" href="structz77__private.html#o19">z77_private::timer</a>
+          <td class="md" nowrap valign="top"> struct timer_list <a class="el" href="structz77__private.html#o17">z77_private::timer</a>
       </table>
     </td>
   </tr>
@@ -686,13 +662,13 @@ TX Buffer offset to phys base     </td>
 previous link state     </td>
   </tr>
 </table>
-<a name="o22" doxytag="z77_private::txBd"></a><p>
+<a name="o20" doxytag="z77_private::txBd"></a><p>
 <table class="mdTable" width="100%" cellpadding="2" cellspacing="0">
   <tr>
     <td class="mdRow">
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td class="md" nowrap valign="top"> <a class="el" href="structz077__bd.html">Z077_BD</a> <a class="el" href="structz77__private.html#o22">z77_private::txBd</a>[Z077_TBD_NUM]
+          <td class="md" nowrap valign="top"> <a class="el" href="structz077__bd.html">Z077_BD</a> <a class="el" href="structz77__private.html#o20">z77_private::txBd</a>[Z077_TBD_NUM]
       </table>
     </td>
   </tr>

@@ -8,7 +8,7 @@
  *     Switches:
  *
  *---------------------------------------------------------------------------
- * Copyright 2019, MEN Mikro Elektronik GmbH
+ * Copyright 2020, MEN Mikro Elektronik GmbH
  ****************************************************************************/
 /*
  *  This program is free software: you can redistribute it and/or modify
@@ -148,6 +148,7 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 /* Add more possible PHY IDs here */
 static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
+	{ 0x2000, "TI DP83822"},	/* TI PHY on F301N */
 	{ 0x0022, "Micrel "},		/* Micrel PHY on EM01 */
 	{ 0x0141, "Marvell 88E6095"},	/* Switch F301, F302 */
 	{ 0x0143, "Broadcom BCM5481"},	/* F11S */
@@ -155,6 +156,20 @@ static PHY_DEVICE_TBL z077PhyAttachTbl[] = {
 	{ 0x000d, "MEN PHY" },		/* dummy PHY in F218 rear Ethernet */
 	{ 0xffff, ""}
 };
+
+/* I2C Message - used for pure i2c transaction */
+typedef struct z77_i2c_msg_st
+{
+	u16 addr;				/**< slave address			*/
+	u32 flags;				/**< flags for communication		*/
+#define I2C_M_TEN			0x0010	/**< we have a ten bit chip address	*/
+#define I2C_M_WR			0x0000	/**< write access			*/
+#define I2C_M_RD			0x0001	/**< read access			*/
+#define I2C_M_NOSTART			0x4000	/**< don't send start bit		*/
+#define I2C_M_REV_DIR_ADDR		0x2000
+	u16 len;				/**< msg length				*/
+	u8 *buf;				/**< pointer to msg data		*/
+} z77_i2c_msg_t;
 
 /**
  * z077_private: main data struct for the driver \n
@@ -193,10 +208,6 @@ struct z77_private {
 	u32 serialnr;
 	/*!< board identifier of this eth */
 	u32 board;
-	/*!< SMB2 descriptor for EEPROM */
-	SMB_DESC_PORTCB smb2desc;
-	/*!< SMB2 Handle */
-	void *smbHdlP;
 	/*!< process context resetting (ndo_tx_timeout) */
 	struct work_struct reset_task;
 	/*!< period timer for linkchange poll */
@@ -225,6 +236,8 @@ struct z77_private {
 	struct pci_dev *pdev;
 	/*!< MII API hooks, info */
 	struct mii_if_info mii_if;
+	/*!< prevent concurrent accesses on mii interface */
+	spinlock_t mii_lock;
 	/*!< debug message level */
 	u32 msg_enable;
 	/*!< NAPI struct */
@@ -239,7 +252,11 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev);
 static irqreturn_t z77_irq(int irq, void *dev_id);
 static int z77_close(struct net_device *dev);
 static struct net_device_stats *z77_get_stats(struct net_device *dev);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+static void z77_tx_timeout(struct net_device *dev, unsigned int txqueue);
+#else
 static void z77_tx_timeout(struct net_device *dev);
+#endif
 static void z77_rx_err(struct net_device *dev );
 static void z77_tx_err(struct net_device *dev );
 static int z77_poll(struct napi_struct *napi,int budget);
@@ -312,10 +329,11 @@ static int G_globalInstanceCount = 0;
 #define PHY_MODE_NAME_LEN	(5+1)
 #define MAC_ADDR_NAME_LEN	(13+1)
 
-static int nrcores  = NR_ETH_CORES_MAX;
-static int dbglvl   = 0;
-static int phyadr[NR_ETH_CORES_MAX]    = {0,0,0,0,0,0,0,0};
-static int mode[NR_ETH_CORES_MAX]      = {0,0,0,0,0,0,0,0};
+static int nrcores			= NR_ETH_CORES_MAX;
+static int mode[NR_ETH_CORES_MAX]	= {0,0,0,0,0,0,0,0};
+static int phyadr[NR_ETH_CORES_MAX]	= {0,0,0,0,0,0,0,0};
+static int dbglvl			= 0;
+static int maceepromacc			= 0;
 
 module_param_array(mode, int, (void*)&nrcores, 0664);
 MODULE_PARM_DESC(mode, " 0=autoneg 1=10MbitHD 2=10MbitFD 3=100MbitHD 4=100MbitFD ex.: mode=4,0,0");
@@ -323,9 +341,11 @@ module_param_array(phyadr, int, (void*)&nrcores, 0664 );
 MODULE_PARM_DESC(phyadr, " address of PHY#n connected to each Z87 unit. example: phyadr=1,2,0");
 module_param(dbglvl, int, 0664 );
 MODULE_PARM_DESC(dbglvl, " 0=none 1=basic 2=verbose 3=very verbose (dumps every packet, use with care!). ");
+module_param(maceepromacc, int, 0664 );
+MODULE_PARM_DESC(maceepromacc, " 0=none !=0 create sysfs node z77_eeprod_mac to access EEPROM attached to FPGA");
 
 /* helper to keep Register descriptions in a comfortable struct */
-const Z077_REG_INFO z77_reginfo[] = {
+static const Z077_REG_INFO z77_reginfo[] = {
 	{"MODER     ", Z077_REG_MODER		},
 	{"INT_SRC   ", Z077_REG_INT_SRC		},
 	{"INT_MASK  ", Z077_REG_INT_MASK	},
@@ -631,7 +651,8 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_tx_timeout		= z77_tx_timeout,
 	.ndo_set_rx_mode	= z77_set_rx_mode,
 #if defined(RHEL_RELEASE)
-# if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+# if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)) && \
+     (LINUX_VERSION_CODE <  KERNEL_VERSION(4,18,0))
 	.extended
 # endif
 #endif
@@ -658,11 +679,16 @@ static const struct net_device_ops z77_netdev_ops = {
 static int z77_sda_in(void *dat)
 {
 	int pin=0;
-	volatile unsigned int tmp = 0, i = 0;
+	volatile unsigned int tmp = 0;
 
-	for (i=0; i < 2; i++) {
-		tmp = Z77READ_D32( dat, Z077_REG_SMBCTRL);
-	}
+	/* Set SDA to open drain */
+	tmp = Z77READ_D32(dat, Z077_REG_SMBCTRL);
+	tmp |= SMB_REG_SDA;
+	Z77WRITE_D32(dat, Z077_REG_SMBCTRL, tmp);
+	udelay(10);
+
+	/* Read SDA */
+	tmp = Z77READ_D32(dat, Z077_REG_SMBCTRL);
 
 	pin = (tmp & SMB_REG_SDA) ? 1 : 0;
 	return pin;
@@ -681,12 +707,37 @@ static int z77_sda_out(void *dat, int pinval)
 	volatile unsigned int tmp = Z77READ_D32( dat, Z077_REG_SMBCTRL);
 
 	if (pinval)
-		tmp |=SMB_REG_SDA;
+		tmp |= SMB_REG_SDA;
 	else
-		tmp &=~SMB_REG_SDA;
+		tmp &= ~SMB_REG_SDA;
 
-	Z77WRITE_D32( dat, Z077_REG_SMBCTRL, tmp);
+	Z77WRITE_D32(dat, Z077_REG_SMBCTRL, tmp);
 	return(0);
+}
+
+/******************************************************************************
+ ** z77_sda_in - read SCL Pin on SMB Register
+ *
+ * \param dat	\IN general purpose data, the Z87 instances base address
+ *
+ * \return		pin state: 0 or 1
+ */
+static int z77_scl_in(void *dat)
+{
+	int pin=0;
+	volatile unsigned int tmp = 0;
+
+	/* Set SCL to open drain */
+	tmp = Z77READ_D32(dat, Z077_REG_SMBCTRL);
+	tmp |= SMB_REG_SCL;
+	Z77WRITE_D32(dat, Z077_REG_SMBCTRL, tmp);
+	udelay(10);
+
+	/* Read SCL */
+	tmp = Z77READ_D32(dat, Z077_REG_SMBCTRL);
+
+	pin = (tmp & SMB_REG_SCL) ? 1 : 0;
+	return pin;
 }
 
 /******************************************************************************
@@ -881,37 +932,46 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	int retVal = 0xffff;
 	volatile u32 miival = 0;
 	volatile u32 tout = MII_ACCESS_TIMEOUT;
+	unsigned long flags;
+	struct z77_private *np = netdev_priv(dev);
+
+	spin_lock_irqsave(&np->mii_lock, flags);
 
 	/* wait until a previous BUSY disappears */
 	do {
 		miival = Z77READ_D32(Z077_BASE, Z077_REG_MIISTATUS );
 		tout--;
-	} while( (miival & OETH_MIISTATUS_BUSY) && tout);
+	} while ( (miival & OETH_MIISTATUS_BUSY) && tout );
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Read timeout!\n");
-		return -1;
+		retVal = -1;
+		goto mdio_read_out;
 	}
 
 	/* set up combined PHY and Register within Phy,
 	 * then kick off read cmd */
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MIIADR,
 			(location & 0xff) << 8 | phy_id );
-	Z77WRITE_D32( Z077_BASE, Z077_REG_MIICMD, OETH_MIICMD_RSTAT);
+	Z77WRITE_D32( Z077_BASE, Z077_REG_MIICMD, OETH_MIICMD_RSTAT );
 
 	/* wait until the PHY finished */
 	do {
-		miival = Z77READ_D32(Z077_BASE, Z077_REG_MIISTATUS );
+		miival = Z77READ_D32( Z077_BASE, Z077_REG_MIISTATUS );
 		tout--;
-	} while( (miival & OETH_MIISTATUS_BUSY) && tout);
+	} while ( (miival & OETH_MIISTATUS_BUSY) && tout );
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Read timeout!\n");
-		return -1;
+		retVal = -1;
+		goto mdio_read_out;
 	}
 
-    /* fetch read Value from MIIRX_DATA*/
-    retVal = Z77READ_D32( Z077_BASE, Z077_REG_MIIRX_DATA );
+	/* fetch read Value from MIIRX_DATA*/
+	retVal = Z77READ_D32( Z077_BASE, Z077_REG_MIIRX_DATA );
+
+mdio_read_out:
+	spin_unlock_irqrestore(&np->mii_lock, flags);
 	return retVal;
 }
 
@@ -930,6 +990,10 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 {
 	volatile u32 miival = 0;
 	volatile u32 tout = MII_ACCESS_TIMEOUT;
+	unsigned long flags;
+	struct z77_private *np = netdev_priv(dev);
+
+	spin_lock_irqsave(&np->mii_lock, flags);
 
 	/* wait until a previous BUSY disappears */
 	do {
@@ -939,7 +1003,7 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Write timeout!\n");
-		return;
+		goto mdio_write_out;
 	}
 
 	Z77WRITE_D32( Z077_BASE, Z077_REG_MIIADR,
@@ -955,8 +1019,12 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 
 	if (!tout) {
 		printk(KERN_ERR "*** MII Write timeout!\n");
-		return;
+		goto mdio_write_out;
 	}
+
+mdio_write_out:
+	spin_unlock_irqrestore(&np->mii_lock, flags);
+	return;
 }
 
 /**
@@ -990,11 +1058,10 @@ static void z77_ethtool_get_drvinfo(struct net_device *dev,
 	if (pcd)
 		strcpy(info->bus_info, pci_name(pcd));
 
-	/* ts: added Register Dumps */
 	if (np->msg_enable)
 		z77_regdump(dev);
 
-	spin_unlock_irq(&np->lock);
+	spin_unlock_irqrestore(&np->lock, flags);
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
@@ -1311,7 +1378,7 @@ static struct ethtool_ops z77_ethtool_ops = {
 };
 
 /* return non zero if the Tx BD is full already, a stall condition occurred */
-u32 tx_full(struct net_device *dev)
+static u32 tx_full(struct net_device *dev)
 {
 	int txbEmpty;
 	struct z77_private *np = netdev_priv(dev);
@@ -1744,6 +1811,9 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(phyAddr=%d)\n",
 			__FUNCTION__, phyAddr);
 
+	/* clear structure */
+	memset(&cmd, 0, sizeof(struct ethtool_cmd));
+
 	/* some default settings */
 	cmd.port = PORT_MII;
 	cmd.transceiver = XCVR_INTERNAL;
@@ -1754,31 +1824,31 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 	case phymode_10hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_10fd:
 		np->mii_if.full_duplex = 1;
 		np->mii_if.force_media = 1;
-		cmd.speed = SPEED_10;
+		ethtool_cmd_speed_set(&cmd, SPEED_10);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_100hd:
 		np->mii_if.full_duplex	= 0;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_HALF;
 		break;
 	case phymode_100fd:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 1;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		break;
 	case phymode_auto:
 		np->mii_if.full_duplex	= 1;
 		np->mii_if.force_media	= 0;
-		cmd.speed = SPEED_100;
+		ethtool_cmd_speed_set(&cmd, SPEED_100);
 		cmd.duplex = DUPLEX_FULL;
 		cmd.autoneg = AUTONEG_ENABLE;
 		bDoAutoneg = 1;
@@ -1915,7 +1985,11 @@ static void z77_reset_task(struct work_struct *work)
  *
  * \return -
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+static void z77_tx_timeout(struct net_device *dev, unsigned int txqueue)
+#else
 static void z77_tx_timeout(struct net_device *dev)
+#endif
 {
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL1, "z77_tx_timeout called!\n");
@@ -2088,7 +2162,7 @@ static int z77_open(struct net_device *dev)
  * \param dev			\IN net_device struct for this NIC
  * \param skb			\IN struct skbuf with data to transmit
  *
- * \return 				0 or error code
+ * \return 			0 or error code
  */
 static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 {
@@ -2237,102 +2311,603 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 }
 
 /*******************************************************************/
-/** perform a SMBus cycle on EEprom
-*
-* \param dev	\IN net_device struct for this NIC
-* \param c	    \IN command char to describe which cycle to perform
-*
-* \return 0 or 1 when cycle='G' or 0xffff
-*/
-static unsigned int smb_cycle(struct net_device *dev, unsigned char c)
+/** delay for each I2C cycle
+ *
+ */
+static void z77_i2c_delay(void)
 {
-	int i;
-	unsigned int val=0;
-	int symboltype=-1;
-	unsigned char chip[4][2][3] = { /* signal every cycle as a triplet */
-		{{1,1,1},  /* SCL */   /* START */
-		 {1,0,0}}, /* SDA */
-		{{1,1,1},  /* STOP */
-		 {0,1,1}},
-		{{0,1,0},  /* '1' or ACK */
-		 {1,1,1}},
-		{{0,1,0},  /* '0' or low */
-		 {0,0,0}}
-	};
-	switch( c ) {
-	case 'S': /* START is SDA = 1,0,0 while SCL high (1,1,1) */
-		symboltype =  0;
-		break;
-	case 'O': /* STOP is SDA = 0,1,1 while SCL high (1,1,1) */
-		symboltype =  1;
-		break;
-	case 'A':
-	case '1':
-	case 'R':
-	case 'G': /* these are SDA = 1,1,1 (tristate) while a SCL pulse(0,1,0)*/
-		symboltype =  2;
-		break;
-	case 'W':
-	case '0': /* these are SDA = 0,0,0 (
-		     driven low) while a SCL pulse(0,1,0)*/
-		symboltype =  3;
-		break;
-	case 'P':
-		udelay(50); /* Pause: change to other value if desired */
-		break;
-	default:
-		printk("*** intern error (SMB sequence wrong char '%c')\n",c);
-	}
-	if (symboltype >= 0) {
-		for (i=0; i< 3; i++) {
-			udelay(50);
-			 /* for 'G' cycles, store SDA */
-			if ( (i==1) && (c == 'G'))
-				val = z77_sda_in(Z077_BASE);
-
-			z77_scl_out(Z077_BASE, chip[symboltype][0][i] );
-			z77_sda_out(Z077_BASE, chip[symboltype][1][i] );
-		}
-	}
-	return (c == 'G') ? val : 0xffff;
+	udelay(50);
 }
 
 /*******************************************************************/
-/** Read a byte from MAC EEPROM directly attached to this Z87
+/** free the I2C bus 
  *
- * \param dev		\IN net_device struct for this NIC
- * \param offset	\IN position of byte to read
+ * \param dev			\IN net_device struct for this NIC
  *
- * \return byte value at this offset in EEPROM
  * \brief
- *  Every cycle of the SMB access is coded in a descriptive string:
- *	S: Start    0:   0
- *	O: Stop     1:   1
- *	R: Read  	A:   Ack (SDA just set high, no check!)
- *	W: Write    P:   Pause 50 us
- *	G: Get bit (=reads SDA)
- *  Attention: this assumes that exactly one byte is read (8x'G' in a row)!
+ *  Free the bus from busy devices by setting SDA high
+ *  and clock 20 times.
  */
-static unsigned char z77_read_byte_data(struct net_device *dev,
-					unsigned int offset )
+static void z77_i2c_freeBus(struct net_device *dev)
 {
-	unsigned int i=0, j=7;
-	unsigned char byte=0;
-	unsigned char sequence[]="S1010000WA00000000AS1010000RAGGGGGGGGAO\0";
+	int i;
 
-	for (i=0; i < 8; i++) /* insert offset in offset write phase above */
-		sequence[10 + i] = (offset & (0x80>>i)) ? '1' : '0';
-	i=0;
-	while(sequence[i]) {
-		if (sequence[i] == 'G') /* G: Get a bit (sda_in) */
-			 /* assumes 8x'G'! */
-			byte |= smb_cycle(dev, sequence[i++]) << (j--);
-		else
-			/* other cycles: clocked out straightforward */
-			smb_cycle(dev, sequence[i++]);
+	z77_sda_out(Z077_BASE, 1);
+	z77_i2c_delay();
+	for (i = 0; i < 20; i++)
+	{
+		z77_scl_out(Z077_BASE, 1);
+		z77_i2c_delay();
+		z77_scl_out(Z077_BASE, 0);
+		z77_i2c_delay();
 	}
-	return byte;
+	z77_scl_out(Z077_BASE, 1);
+	z77_i2c_delay();
 }
+
+/*******************************************************************/
+/** set RESTART condition
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Set RESTART condition 
+ *          ____
+ *    SDA       |_
+ *            ___
+ *    SCL  X_|
+ *
+ */
+static int z77_i2c_start(struct net_device *dev)
+{
+	z77_scl_out(Z077_BASE, 0);
+	z77_i2c_delay();
+	z77_scl_out(Z077_BASE, 1);
+
+	/* check SCL is high */
+	z77_i2c_delay();
+	if( !z77_scl_in(Z077_BASE) )
+		return( SMB_ERR_BUSY );
+
+	/* check SDA is high */
+	if( !z77_sda_in(Z077_BASE) )
+	{
+		z77_i2c_freeBus( dev );
+		if( !z77_sda_in(Z077_BASE) )
+			return( SMB_ERR_BUSY );
+	}
+
+	if( z77_sda_out(Z077_BASE, 0) )
+		return( SMB_ERR_COLL );
+	else
+		z77_i2c_delay();
+	return( 0 );
+}
+
+/*******************************************************************/
+/** set STOP condition
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Set STOP condition 
+ *              __
+ *    SDA  X___|    
+ *            ___
+ *    SCL  X_|
+ *
+ */
+static int z77_i2c_stop(struct net_device *dev)
+{
+	z77_sda_out(Z077_BASE, 0);
+	z77_i2c_delay();
+	z77_scl_out(Z077_BASE, 0);
+	z77_i2c_delay();
+
+	if( z77_scl_out(Z077_BASE, 1) )
+		return( SMB_ERR_COLL );
+
+	z77_i2c_delay();
+	if( z77_sda_out(Z077_BASE, 1) )
+		return( SMB_ERR_BUSY );
+	else
+		return( 0 );
+}
+
+/*******************************************************************/
+/** check the bit for acknowledge
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Check acknowledge 
+ *         _     __
+ *    SDA   |___|    expected 
+ *             ___
+ *    SCL  ___|
+ *
+ */
+static int z77_i2c_checkAckn(struct net_device *dev)
+{
+	int error = 0;
+
+	z77_scl_out(Z077_BASE, 0);
+	z77_i2c_delay();
+	z77_sda_out(Z077_BASE, 1);
+	z77_i2c_delay();
+
+	if( z77_scl_out(Z077_BASE, 1) )
+		return( SMB_ERR_COLL );
+
+	z77_i2c_delay();
+
+	if( z77_sda_in(Z077_BASE) )
+		error = SMB_ERR_NO_DEVICE ;
+
+	return( error );
+}
+
+/*******************************************************************/
+/** set the bit for acknowledge
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Set acknowledge 
+ *         _     __
+ *    SDA   |___|    set
+ *             ___
+ *    SCL  ___|
+ *
+ */
+static int z77_i2c_setAckn(struct net_device *dev)
+{
+	z77_scl_out(Z077_BASE, 0);
+	z77_i2c_delay();
+	z77_sda_out(Z077_BASE, 0);
+	z77_i2c_delay();
+
+	if( z77_scl_out(Z077_BASE, 1) )
+		return( SMB_ERR_COLL );
+
+	z77_i2c_delay();
+	return( 0 );
+}
+
+/*******************************************************************/
+/** set the bit for not acknowledge
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Set not acknowledge 
+ *         _______
+ *    SDA            set
+ *             ___
+ *    SCL  ___|
+ *
+ */
+static int z77_i2c_notAckn(struct net_device *dev)
+{
+	z77_scl_out(Z077_BASE, 0);
+	z77_sda_out(Z077_BASE, 1);
+	z77_i2c_delay();
+
+	if( z77_scl_out(Z077_BASE, 1) )
+		return( SMB_ERR_COLL );
+
+	z77_i2c_delay();
+	return( 0 );
+}
+
+/*******************************************************************/
+/** send a byte
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Send a byte 
+ *         _ ___ _
+ *    SDA  _X___X_   set for each bit
+ *             ___
+ *    SCL  ___|
+ *
+ */
+static int z77_i2c_sendByte(struct net_device *dev, u8 val)
+{
+	u8 mask;
+	int error = 0;
+
+	mask = 0x80;
+	while( mask )
+	{
+		if( z77_scl_out(Z077_BASE, 0) ){
+			error = SMB_ERR_COLL;
+			goto out_cleanup;
+		}
+		z77_i2c_delay();
+
+		if( z77_sda_out(Z077_BASE, (mask & val) ? 1 : 0) ) {
+			error = SMB_ERR_BUSY;
+			goto out_cleanup;
+		}
+		z77_i2c_delay();
+
+		if( z77_scl_out(Z077_BASE, 1) ){
+			error = SMB_ERR_COLL;
+			goto out_cleanup;
+		}
+		z77_i2c_delay();
+
+		mask >>= 1;
+	}/*while*/
+out_cleanup:
+	/* finish always with setting SCL high only happens in case off error*/
+	if( error && !z77_scl_in(Z077_BASE) )
+		z77_scl_out(Z077_BASE, 1);
+	return( error );
+}
+
+/*******************************************************************/
+/** read a byte
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Read a byte 
+ *         _ ___ _
+ *    SDA  _X___X_   read before SCL risig edge for each bit
+ *             ___
+ *    SCL  ___|
+ *
+ */
+static int z77_i2c_readByte(struct net_device *dev, u8 *valP)
+{
+	u8 mask;
+	int error = 0;
+
+	*valP = 0xFF;
+	mask = 0x80;
+
+	if( z77_scl_out(Z077_BASE, 0)){
+		error = SMB_ERR_COLL;
+		goto out_cleanup;
+	}
+	/* switch port to input */
+	z77_sda_in(Z077_BASE);
+	z77_i2c_delay();
+
+	while( mask )
+	{
+		if( z77_scl_out(Z077_BASE, 0)){
+			error = SMB_ERR_COLL;
+			goto out_cleanup;
+		}
+
+		z77_i2c_delay();
+		if( !z77_sda_in(Z077_BASE) )
+			*valP &= ~mask;
+
+		z77_i2c_delay();
+		if( z77_scl_out(Z077_BASE, 1) ){
+			error = SMB_ERR_COLL;
+			goto out_cleanup;
+		}
+
+
+		z77_i2c_delay();
+		mask >>= 1;
+	}
+
+out_cleanup:
+	/* finish always with setting SCL high only happens in case off error*/
+	if( error && !z77_scl_in(Z077_BASE) )
+		z77_scl_out(Z077_BASE, 1);
+	return( error );
+}
+
+/*******************************************************************/
+/** read a defined length of bytes
+ *
+ * \param dev			\IN net_device struct for this NIC
+ * \param msg			\INOUT i2c message struct for
+ *				this transfer. Received data will
+ *				be stored in this message
+ * \param stop			\IN if stop is set. the access is
+ *				terminated after the transfer
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Read a defined length of bytes
+ */
+int z77_i2c_read_msg(struct net_device *dev, struct z77_i2c_msg_st *msg, int stop)
+{
+	u32 error = 0, error1  = 0, stopErr = 0;
+	u32 len = msg->len;
+	u8 *buf = msg->buf;
+	*buf = 0xFF;
+
+	if( (error = z77_i2c_start( dev )) )
+		goto out_cleanup;
+
+	/* send device address */
+	if( (error = z77_i2c_sendByte( dev, msg->addr | SMB_READ )) )
+		goto out_cleanup;
+
+	if( (error = z77_i2c_checkAckn( dev )) )
+		goto out_cleanup;
+
+	/* read data */
+	while( --len ) {
+		/* OSS_MikroDelay() is blocking for some OS
+		 * give other tasks a chance:-) */
+		udelay(1000);
+		error  = z77_i2c_readByte( dev, buf );
+		error1 = z77_i2c_setAckn( dev );
+		if( error )
+		{
+			goto out_cleanup;
+		}
+		if( error1 ) 
+		{
+			error = error1;
+			goto out_cleanup;
+		}
+		buf++;
+	}
+	/* OSS_MikroDelay() is blocking for some OS
+	 * give other tasks a chance:-) */
+	udelay(1000);
+	error  = z77_i2c_readByte( dev, buf );
+	z77_i2c_notAckn(dev);
+
+out_cleanup:
+	if( stop )
+		stopErr = z77_i2c_stop( dev );
+	if( error )
+		return( error );
+	return( stopErr );
+}
+
+/*******************************************************************/
+/** Write a defined length of bytes
+ *
+ * \param dev			\IN net_device struct for this NIC
+ * \param msg			\INOUT i2c message struct for
+ *				this transfer. Send data will
+ *				be used from this message
+ * \param stop			\IN if stop is set. the access is
+ *				terminated after the transfer
+ *
+ * \return			0 or error code
+ *
+ * \brief 
+ * Write a defined length of bytes
+ */
+u32 z77_i2c_write_msg(struct net_device *dev, const struct z77_i2c_msg_st *msg, int stop)
+{
+	u32 error = 0, error1 = 0, stopErr = 0;
+	u32 len = msg->len;
+	const u8 *buf = msg->buf;
+
+	if( (error = z77_i2c_start( dev )) )
+		goto out_cleanup;
+	/* send device address */
+	if( (error = z77_i2c_sendByte( dev, msg->addr | SMB_WRITE )) )
+		goto out_cleanup;
+	if( (error = z77_i2c_checkAckn( dev )) )
+		goto out_cleanup;
+
+	/* send data */
+	while( len-- ) {
+		/* OSS_MikroDelay() is blocking for some OS
+		 * give other tasks a chance:-) */
+		udelay(10000);
+		error  = z77_i2c_sendByte( dev, *buf++ );
+		error1 = z77_i2c_checkAckn( dev );
+		if( error )
+			goto out_cleanup;
+		if( error1 ) {
+			error = error1;
+			goto out_cleanup;
+		}
+	}
+
+out_cleanup:
+	if( stop )
+		stopErr = z77_i2c_stop( dev );
+	if( error )
+	    return( error );
+	return( stopErr );
+}
+
+static int32 z77_i2c_xfer_msg(struct net_device *dev, struct z77_i2c_msg_st msg[], u32 num)
+{
+	struct z77_i2c_msg_st *pmsg;
+	u32 i;
+	int32 error = SMB_ERR_NO;
+	int32 doStop = 0, didStop = 0;
+
+	if( !msg ) {
+		error = SMB_ERR_PARAM;
+		goto out_err;
+	}
+
+	/* tingle through messages */
+	for( i = 0; error == SMB_ERR_NO && i < num; i++ ){
+		pmsg = &msg[i];
+
+		/* sanity checks */
+		if( !pmsg || pmsg->flags & I2C_M_TEN ){
+			error = SMB_ERR_PARAM;
+			goto out_err;
+		}
+		if(i == (num - 1)) /* send stop on last packet */
+			doStop = 1;
+
+		if( pmsg->flags & I2C_M_RD )
+			error = z77_i2c_read_msg( dev, pmsg, doStop );
+		else
+			error = z77_i2c_write_msg( dev, pmsg, doStop );
+
+		if(i != (num - 1)) /* do small delays between packets */
+			z77_i2c_delay();
+
+		if( doStop && !error )
+			didStop = 1;
+	}
+out_err:
+	return error;
+}
+
+static u8 z77_eeprod_mac_calc_parity(u8 *ptr, u32 len)
+{
+	u8 parity = 0xF;
+
+	while( len-- ){
+		parity ^= (*ptr >> 4);
+		parity ^= (*ptr & 0xf);
+		ptr++;
+	}
+
+	return parity;
+}
+
+/*******************************************************************/
+/** attribute function to read MAC from EEPROM
+ *
+ * \buf		/OUT MAC address as a string in format 12:56:89:cb:fe:0e
+ *
+ * \return	the string length
+ *
+ */
+static ssize_t z77_eeprod_mac_show(struct device *dev,
+				  struct device_attribute *attr,
+				  char *buf)
+{
+	struct net_device *ndev = to_net_dev(dev);
+	unsigned char mac[6] = {0};
+	unsigned char msgbuf[8] = {0};
+	struct z77_i2c_msg_st i2cmes[2];
+
+
+	i2cmes[0].addr = 0xa0;
+	i2cmes[0].buf = msgbuf;
+	// Write offset in the EEPROM
+	msgbuf[0] = 0;
+	i2cmes[0].flags = I2C_M_WR;
+	i2cmes[0].len = 1;
+
+	i2cmes[1].addr = 0xa0;
+	i2cmes[1].buf = msgbuf;
+	// Read magic/parity + 6 Byte MAC
+	i2cmes[1].flags = I2C_M_RD;
+	i2cmes[1].len = 7;
+	
+	if (z77_i2c_xfer_msg(ndev, i2cmes, 2)) {
+		dev_err(dev, "*** EEPROM Read ERROR\n");
+		return 0;
+	}
+
+	/* Copy MAC address */
+	mac[0] = msgbuf[1];
+	mac[1] = msgbuf[2];
+	mac[2] = msgbuf[3];
+	mac[3] = msgbuf[4];
+	mac[4] = msgbuf[5];
+	mac[5] = msgbuf[6];
+
+	return sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
+
+/*******************************************************************/
+/** attribute function to write MAC to EEPROM
+ *
+ * \buf		/OUT MAC address as a string in format 
+ *		12:56:89:cb:fe:0e
+ *
+ * \return	the number of accepted bytes => 
+ *		will be always equal to count
+ *
+ */
+static ssize_t z77_eeprod_mac_store(struct device *dev,
+				   struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	struct z77_i2c_msg_st i2cmes;
+	struct net_device *ndev = to_net_dev(dev);
+	int macIndex = 0;
+	long val;
+	char tmpBuffer[50];
+	u8 msgbuf[8];
+	char *tmpBufferPtr;
+	char *token;
+
+	if (!buf || (count > 50))
+		return count;
+    
+	/* Copy input buffer */
+	snprintf(tmpBuffer, 50, "%s", buf);
+	tmpBufferPtr = tmpBuffer;
+
+	/* Modify string for seperation */
+	token = strsep(&tmpBufferPtr, ":");
+
+	macIndex = 0;
+	while (token != NULL)
+	{
+		/* Interpret string as hex value */
+		if (kstrtol(token, 16, &val)) {
+			dev_err(dev,
+				"%s: ERROR: Wrong format for value (should be decimal)\n",
+				__func__);
+			return count;
+		}
+		/* Write data to message buffer */
+		msgbuf[2 + macIndex] = (unsigned char)(val & 0xFF);
+		/* Increment mac address and break if we have last byte of MAC */
+		macIndex ++;
+		if (macIndex >= 6)
+			break;
+		/* Get next token */
+		token = strsep(&tmpBufferPtr, ":");
+	}
+
+	i2cmes.addr  = 0xa0;
+	i2cmes.buf   = msgbuf;
+	// Write offset, start bit.
+	i2cmes.flags = I2C_M_WR;
+	i2cmes.len   = 1;
+
+	/* Address */
+	msgbuf[0] = 0;
+	/* MAC_ID_MAGIC | parity  */
+	msgbuf[1] = 0xB0 | z77_eeprod_mac_calc_parity( (((u8 *)msgbuf) + 2), 6 );
+	i2cmes.len = 8;
+
+	/* Write MAC to EEPROD */
+	z77_i2c_xfer_msg(ndev, &i2cmes, 1);
+
+	return count;
+}
+static DEVICE_ATTR_RW(z77_eeprod_mac);
 
 /*******************************************************************/
 /** finding a board ident EEPROM to read MAC from
@@ -2398,15 +2973,18 @@ static int z77_get_mac_from_board_id(u8 *mac)
  */
 static int chipset_init(struct net_device *dev, u32 first_init)
 {
-	u32 moder = 0, i=0;
+	u32 moder = 0;
 	struct z77_private *np = netdev_priv(dev);
-	u8 mac[6] = {0,0,0,0,0,0};
-	u32 mac0reg=0, mac1reg=0;
+	struct z77_i2c_msg_st i2cmes[2];
+	u8 mac[6] = {0, 0, 0, 0, 0, 0};
+	u8 msgbuf[8] = {0};
+	u32 mac0reg = 0, mac1reg = 0;
 
 	Z77DBG(ETHT_MESSAGE_LVL1, "--> %s(%d)\n", __FUNCTION__, first_init);
 
 	z77_reset( dev );
-	if( first_init==0 ) { /* 1. Check what's already in the MAC Registers */
+	if (first_init == 0) {
+		/* 1. Check what's already in the MAC Registers */
 		mac0reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR0 );
 		mac1reg = Z77READ_D32( Z077_BASE, Z077_REG_MAC_ADDR1 );
 		mac[0] = ( mac1reg >> 8  ) & 0xff;
@@ -2415,7 +2993,7 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[3] = ( mac0reg >> 16 ) & 0xff;
 		mac[4] = ( mac0reg >> 8  ) & 0xff;
 		mac[5] = ( mac0reg >> 0  ) & 0xff;
-		if ( is_valid_ether_addr( mac )) {
+		if (is_valid_ether_addr( mac )) {
 			printk(KERN_INFO
 				"current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n",
 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -2426,11 +3004,33 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		/* 2. initial MAC wasn't valid, check for attached MAC EEPROM */
 		printk(KERN_INFO
 			"current MAC %02x:%02x:%02x:%02x:%02x:%02x is invalid, try get one from an attached MAC EEPROM.\n",
-			  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
-		for (i=0; i < 6; i++ )
-			mac[i] = z77_read_byte_data( dev, i+1 );
+			mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
 
-		if ( is_valid_ether_addr(mac) ) {
+		i2cmes[0].addr = 0xa0;
+		i2cmes[0].buf = msgbuf;
+		// Write offset in the EEPROM
+		msgbuf[0] = 0;
+		i2cmes[0].flags = I2C_M_WR;
+		i2cmes[0].len = 1;
+
+		i2cmes[1].addr = 0xa0;
+		i2cmes[1].buf = msgbuf;
+		// Read magic/parity + 6 Byte MAC
+		i2cmes[1].flags = I2C_M_RD;
+		i2cmes[1].len = 7;
+
+		z77_i2c_xfer_msg(dev, i2cmes, 2);
+		mac[0] = msgbuf[1];
+		mac[1] = msgbuf[2];
+		mac[2] = msgbuf[3];
+		mac[3] = msgbuf[4];
+		mac[4] = msgbuf[5];
+		mac[5] = msgbuf[6];
+		
+		/* Check if MAC is valid and calc parity is equal */
+		if (   ((msgbuf[0] & 0xF0) == 0xB0) 
+		    && ((msgbuf[0] & 0x0F) == z77_eeprod_mac_calc_parity( ((u8 *)msgbuf) + 1, 6 ))
+		    && (is_valid_ether_addr(mac)) ) {
 			printk(KERN_INFO
 				"got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n",
 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -2509,7 +3109,7 @@ cont_init:
  *
  * \return -
  */
-void z77_tx(struct net_device *dev)
+static void z77_tx(struct net_device *dev)
 {
 	struct z77_private *np = netdev_priv(dev);
 
@@ -2727,7 +3327,6 @@ static struct net_device_stats *z77_get_stats(struct net_device *dev)
  */
 int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 {
-
 	u32 phys_addr = 0;
 	struct net_device *dev = NULL;
 	struct z77_private *np = NULL;
@@ -2751,18 +3350,23 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	}
 
 	phys_addr = pci_resource_start(chu->pdev, chu->bar) + chu->offset;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
+	dev->base_addr = (unsigned long)ioremap(phys_addr,
+			(u32)Z77_CFGREG_SIZE );
+#else
 	dev->base_addr = (unsigned long)ioremap_nocache(phys_addr,
 			(u32)Z77_CFGREG_SIZE );
-	dev->irq       = chu->irq;
+#endif
+	dev->irq = chu->irq;
 
 	if( dev_alloc_name( dev, "eth%d") < 0)
 		printk("*** warning: couldnt retrieve a name for Z77\n");
 
 	/* setup the phy Info within the private z77_private struct */
 	np = netdev_priv(dev);
-
 	np->pdev = chu->pdev;
 	spin_lock_init(&np->lock);
+	spin_lock_init(&np->mii_lock);
 	pci_set_drvdata(chu->pdev, dev);
 
 	netif_napi_add( dev, &np->napi, z77_poll, Z077_WEIGHT );
@@ -2870,11 +3474,15 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
 		goto err_free_reg;
 	} else {
-		if (register_netdev(dev) == 0) {
-			if (device_create_file(&dev->dev, &dev_attr_linkstate))
-				dev_err(&dev->dev,
-						"Error creating sysfs file\n");
+		if (register_netdev(dev) != 0) {
+			return 0;
 		}
+		if (device_create_file(&dev->dev, &dev_attr_linkstate))
+			dev_err(&dev->dev,
+				"Error creating sysfs file linkstate\n");
+		if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
+			dev_err(&dev->dev,
+				"Error creating sysfs file z77_eeprod_mac\n");
 		return 0;
 	}
 
@@ -2909,7 +3517,7 @@ static int men_16z077_remove( CHAMELEON_UNIT_T *chu )
 	return 0;
 }
 
-static u16 G_modCodeArr[] = {
+static const u16 G_modCodeArr[] = {
 	CHAMELEON_16Z087_ETH,
 	CHAMELEON_MODCODE_END
 };
