@@ -2932,7 +2932,11 @@ static int z77_get_mac_from_board_id(u8 *mac)
 	for ( i=0; i < I2C_MAX_ADAP_CNT; i++ ) {
 		adap = i2c_get_adapter(i);
 		if (adap != NULL) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
+			if ((client = i2c_new_client_device( adap, &i2cinfo ))) {
+#else
 			if ((client = i2c_new_device( adap, &i2cinfo ))) {
+#endif
 				/* is it MEN board ident EEPROM ? yes if 'F'
 				 * or 'G' for a card name found */
 				brd = (char)i2c_smbus_read_byte_data(client,
