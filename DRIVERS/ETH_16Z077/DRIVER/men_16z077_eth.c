@@ -789,9 +789,11 @@ static void z77_timerfunc(struct timer_list *list)
 			np->nCurrTbd = 0;
 			printk( KERN_INFO MEN_Z77_DRV_NAME
 					" (%s): link is up\n", dev->name);
+			netif_carrier_on(dev);
 		} else { /* link went down: close device */
 			printk( KERN_INFO MEN_Z77_DRV_NAME
 					" (%s): link is down\n", dev->name);
+			netif_carrier_off(dev);
 		}
 		np->prev_linkstate = linkstate;
 	}
