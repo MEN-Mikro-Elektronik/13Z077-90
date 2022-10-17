@@ -212,8 +212,6 @@ struct z77_private {
 	struct work_struct reset_task;
 	/*!< period timer for linkchange poll */
 	struct timer_list timer;
-	/*!< previous link state */
-	u32 prev_linkstate;
 #if defined(Z77_USE_VLAN_TAGGING)
 	/*!< VLAN tagging group */
 	struct vlan_group *vlgrp;
@@ -623,7 +621,7 @@ static int z77_set_mac_address(struct net_device *dev, void *p)
 	z77_store_mac( dev );
 
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	return 0;
@@ -773,7 +771,6 @@ static void z77_timerfunc(unsigned long dat)
 static void z77_timerfunc(struct timer_list *list)
 #endif
 {
-	u32 linkstate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	struct net_device *dev = (struct net_device *)dat;
 	struct z77_private *np = netdev_priv(dev);
@@ -781,21 +778,15 @@ static void z77_timerfunc(struct timer_list *list)
 	struct z77_private *np = from_timer(np, list, timer);
 	struct net_device *dev = np->dev;
 #endif
-	linkstate = mii_link_ok(&np->mii_if);
-	if ( np->prev_linkstate != linkstate ) {
-		if ( linkstate == 1 ) { /* link came up: restart IP core */
-			z77_reset( dev );
-			Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
-			np->nCurrTbd = 0;
-			printk( KERN_INFO MEN_Z77_DRV_NAME
-					" (%s): link is up\n", dev->name);
-			netif_carrier_on(dev);
-		} else { /* link went down: close device */
-			printk( KERN_INFO MEN_Z77_DRV_NAME
-					" (%s): link is down\n", dev->name);
-			netif_carrier_off(dev);
-		}
-		np->prev_linkstate = linkstate;
+	if (mii_link_ok(&np->mii_if) && !netif_carrier_ok(dev)) { /* link came up: restart IP core */
+		z77_reset( dev );
+		Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
+		np->nCurrTbd = 0;
+		netdev_info(dev, "Link is up.\n");
+		netif_carrier_on(dev);
+	} else if (netif_carrier_ok(dev) && !mii_link_ok(&np->mii_if)) { /* link went down: close device */
+		netdev_info(dev, "Link is down.\n");
+		netif_carrier_off(dev);
 	}
 
 	/* restart timer */
@@ -1166,7 +1157,7 @@ static int z77_ethtool_set_link_ksettings(struct net_device *dev,
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 	return res;
 }
 #else
@@ -1277,7 +1268,7 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 	return res;
 }
 #endif
@@ -1396,27 +1387,6 @@ static u32 tx_full(struct net_device *dev)
 	return !txbEmpty;
 }
 
-/* ts@men: we need the true linkstate for F218R01-01 */
-static ssize_t z77_show_linkstate(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	unsigned int bsmr = 0;
-	struct z77_private *np  = netdev_priv(to_net_dev(dev));
-#define  MII_BMSR_LINK_VALID	0x0004
-	/* ts: initially the link status isn't up to date, read it twice.
-	 * This is often a latched Register inside PHYs */
-	bsmr = z77_mdio_read(np->dev, np->mii_if.phy_id , MII_BMSR );
-	bsmr = z77_mdio_read(np->dev, np->mii_if.phy_id , MII_BMSR );
-	return sprintf(buf, "%c\n", bsmr & MII_BMSR_LINK_VALID ? '1' : '0' );
-}
-
-static ssize_t z77_set_linkstate(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	return 0;	/* no op */
-}
-
-static DEVICE_ATTR(linkstate, 0644, z77_show_linkstate, z77_set_linkstate );
 /****************************************************************************/
 /** z77_bd_setup - perform initialization of buffer descriptors
  *
@@ -1881,6 +1851,8 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 			Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
 		}
 
+		/* first, a dummy read, needed to latch some MII phys */
+		dat = z77_mdio_read(dev, np->mii_if.phy_id, MII_BMCR);
 		if ((res = mii_ethtool_sset(&np->mii_if, &cmd))) {
 			printk(KERN_INFO
 				"PHY setting fixed mode failed - fixed MEN Phy\n");
@@ -2119,6 +2091,7 @@ static int z77_open(struct net_device *dev)
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL1, "-> %s %s\n", __FUNCTION__, dev->name );
 
+	netif_carrier_off(dev);
 	/* do PHY/MAC initialization with forced mode or autonegotiation */
 	if (chipset_init(dev, 1)) {
 		printk(KERN_ERR
@@ -2322,7 +2295,7 @@ static void z77_i2c_delay(void)
 }
 
 /*******************************************************************/
-/** free the I2C bus 
+/** free the I2C bus
  *
  * \param dev			\IN net_device struct for this NIC
  *
@@ -2354,8 +2327,8 @@ static void z77_i2c_freeBus(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set RESTART condition 
+ * \brief
+ * Set RESTART condition
  *          ____
  *    SDA       |_
  *            ___
@@ -2395,10 +2368,10 @@ static int z77_i2c_start(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set STOP condition 
+ * \brief
+ * Set STOP condition
  *              __
- *    SDA  X___|    
+ *    SDA  X___|
  *            ___
  *    SCL  X_|
  *
@@ -2427,10 +2400,10 @@ static int z77_i2c_stop(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Check acknowledge 
+ * \brief
+ * Check acknowledge
  *         _     __
- *    SDA   |___|    expected 
+ *    SDA   |___|    expected
  *             ___
  *    SCL  ___|
  *
@@ -2462,8 +2435,8 @@ static int z77_i2c_checkAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set acknowledge 
+ * \brief
+ * Set acknowledge
  *         _     __
  *    SDA   |___|    set
  *             ___
@@ -2491,8 +2464,8 @@ static int z77_i2c_setAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set not acknowledge 
+ * \brief
+ * Set not acknowledge
  *         _______
  *    SDA            set
  *             ___
@@ -2519,8 +2492,8 @@ static int z77_i2c_notAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Send a byte 
+ * \brief
+ * Send a byte
  *         _ ___ _
  *    SDA  _X___X_   set for each bit
  *             ___
@@ -2569,8 +2542,8 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
- * Read a byte 
+ * \brief
+ * Read a byte
  *         _ ___ _
  *    SDA  _X___X_   read before SCL risig edge for each bit
  *             ___
@@ -2634,7 +2607,7 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
+ * \brief
  * Read a defined length of bytes
  */
 int z77_i2c_read_msg(struct net_device *dev, struct z77_i2c_msg_st *msg, int stop)
@@ -2665,7 +2638,7 @@ int z77_i2c_read_msg(struct net_device *dev, struct z77_i2c_msg_st *msg, int sto
 		{
 			goto out_cleanup;
 		}
-		if( error1 ) 
+		if( error1 )
 		{
 			error = error1;
 			goto out_cleanup;
@@ -2698,7 +2671,7 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
+ * \brief
  * Write a defined length of bytes
  */
 u32 z77_i2c_write_msg(struct net_device *dev, const struct z77_i2c_msg_st *msg, int stop)
@@ -2820,7 +2793,7 @@ static ssize_t z77_eeprod_mac_show(struct device *dev,
 	// Read magic/parity + 6 Byte MAC
 	i2cmes[1].flags = I2C_M_RD;
 	i2cmes[1].len = 7;
-	
+
 	if (z77_i2c_xfer_msg(ndev, i2cmes, 2)) {
 		dev_err(dev, "*** EEPROM Read ERROR\n");
 		return 0;
@@ -2842,10 +2815,10 @@ static ssize_t z77_eeprod_mac_show(struct device *dev,
 /*******************************************************************/
 /** attribute function to write MAC to EEPROM
  *
- * \buf		/OUT MAC address as a string in format 
+ * \buf		/OUT MAC address as a string in format
  *		12:56:89:cb:fe:0e
  *
- * \return	the number of accepted bytes => 
+ * \return	the number of accepted bytes =>
  *		will be always equal to count
  *
  */
@@ -2864,7 +2837,7 @@ static ssize_t z77_eeprod_mac_store(struct device *dev,
 
 	if (!buf || (count > 50))
 		return count;
-    
+
 	/* Copy input buffer */
 	snprintf(tmpBuffer, 50, "%s", buf);
 	tmpBufferPtr = tmpBuffer;
@@ -3032,9 +3005,9 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[3] = msgbuf[4];
 		mac[4] = msgbuf[5];
 		mac[5] = msgbuf[6];
-		
+
 		/* Check if MAC is valid and calc parity is equal */
-		if (   ((msgbuf[0] & 0xF0) == 0xB0) 
+		if (   ((msgbuf[0] & 0xF0) == 0xB0)
 		    && ((msgbuf[0] & 0x0F) == z77_eeprod_mac_calc_parity( ((u8 *)msgbuf) + 1, 6 ))
 		    && (is_valid_ether_addr(mac)) ) {
 			printk(KERN_INFO
@@ -3483,9 +3456,6 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 		if (register_netdev(dev) != 0) {
 			return 0;
 		}
-		if (device_create_file(&dev->dev, &dev_attr_linkstate))
-			dev_err(&dev->dev,
-				"Error creating sysfs file linkstate\n");
 		if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
 			dev_err(&dev->dev,
 				"Error creating sysfs file z77_eeprod_mac\n");
