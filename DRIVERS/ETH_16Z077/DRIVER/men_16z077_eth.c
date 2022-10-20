@@ -177,6 +177,8 @@ typedef struct z77_i2c_msg_st
  */
 /*@{*/
 struct z77_private {
+    /* current position of the Rx Bd */
+    u8 currPosRxBd;
 	/*!< how long is device open already */
 	long open_time;
 	/*!< Our local flags */
@@ -2001,20 +2003,102 @@ static void z77_tx_timeout(struct net_device *dev)
 }
 
 /****************************************************************************/
-/** When RX0 or RX1 nonempty, return oldest entry. This is tailored for the
- *  2 32bit Registers RX0_EMPTY, RX1_EMPTY.
+/** z77_process_rx - process each nonempty Rx BD
  *
- * \return oldest (rightmost) bit in Rx0/1_EMPTY
+ * \param dev	 	\IN net_device struct of this interface
+ * \param weight	\IN allowed # of packets to process in a call
+ *
+ * \brief
+ * Without Rx position info determining oldest Rx frame
+ * is complicated, several basic situations are possible:
+ *
+ * \verbatim
+ * <-- BD fill direction of Z87 core -----
+ * 63      RX1      32 31       RX0      0
+ *  --------------------------------------
+ * |                  |             oXXXXX|
+ *  -------------------------------------^
+ * |              oXXX|XXXXXXXXXXXXXX     |
+ *  --------------------------------^-----
+ * |       oXXXXXXX   |                   |
+ *  --------------^-----------------------
+ * |XXXXXXX           |                  o|
+ *  ------^-------------------------------
+ * |XX                |             oXXXXX|
+ *  -^------------------------------------
+ * |XXXXXXXXXXXXXXXXXX|XX              oXX|
+ *  --------------------^-----------------
+ * |XX            oXXX|XXXXXXXXXXXXXXXXXXX|
+ *  -^------------------------------------
+ *
+ * ^ = oldest Rx frame in this cycle, which is to be passed to stack first
+ * o = position available from new Rx count register 0x70
+ *
+ * From the hardware we can expect, that there is always only one connected
+ * region of full BDs ('x'). However, we read rx0 first and then rx1. So the
+ * rx0 and rx1 variables reflect the status of the hardware at different times.
+ * As a result we may get disconnected regions of Xes. This is why the
+ * algorithm did not work properly at former releases of this driver, resulting
+ * in a loss of synchronization and yielding packets in the wrong order. This
+ * occured at about 1 in a million packets. Now we normally do not use the
+ * algorithm, but remember the position of the last position we procecced + 1
+ * instead. However this method may also get out of sync if we unplug/plug the
+ * ethernt cable. Then we do not have another chance than using the algo. This
+ * Example to show how the algo may fail:
+ * |                  | oXXXXXXXXXXXX     |  hw register state at time of rx0 read
+ * |              oXXX|XXXXXXXXXXXXXX     |  hw register state at time of rx1 read
+ * Note that some packets have been received between rx0 and rx1 read!
+ * |              oXXX| oXXXXXXXXXXXX     |  what we get in the rx1 und rx0 variables
+ * It seems that there is a hole in the region.
+ *
+ *
+ * simplified Algorithm: 1. skip from Rx BD63 backwards until first full-empty
+ *                          transition found. This is oldest Rx BD (startpos)
+ *                       2. from startpos skip up and pass every nonempty BD
+ *                          to network stack
+ * \endverbatim
+ *
+ * PS: should ever Rx BD organisation change, this needs to be reworked.
+ *     Code in here implies 64 Rx BDs in 2x32bit Registers!.
  */
-static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
+static int z77_process_rx( struct net_device *dev, int weight )
 {
-	volatile u32 frameNum=0, emp_n=0, emp_n1=0;
+	int	nrframes = 0;
+	unsigned int start_pos=0, rx0, rx1, emp_n=0, emp_n1=0;
+	unsigned int nrRxBds = 0;
 	int i;
-	u32 cnt=0;
+	struct z77_private *np 	= netdev_priv(dev);
+    /* counter of processed frames */
+    int cnt = 0;
+    int useAlgo = 0;
+	
+	nrRxBds = Z077_RBD_NUM;
 
-	for ( i = 63; i >=0; i-- )
-	{	/* the 64 Rx BDs are split in 2 x 32bit registers,
-		   check boundaries */
+	/* For this poll-cycle we check RX BDs only here! */
+	/* Be aware, that rx0 and rx1 reflect the state of hardware register at different times! */
+	/* Note that some packets may be received between rx0 and rx1 read! */
+	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
+	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
+
+    start_pos = np->currPosRxBd;
+
+    if ( ( (start_pos < 32)  && ( (rx0 & (1 <<  start_pos)     ) == 0 ))
+    ||   ( (start_pos >= 32) && ( (rx1 & (1 << (start_pos-32) )) == 0 )) )
+	{
+        if((rx0 != 0) || (rx1 != 0))
+        {
+            useAlgo = 1;
+        }
+        else
+        {
+            return 0;
+        }
+	}
+
+	if( useAlgo ) {
+		/* This is The Legendary Algorithm... */
+		for (i = 63; i >=0; i--) {
+			/* the 64 Rx BDs are split in 2 x 32bit registers, check boundaries */
 		if (i > 32) { /* 63..33  RX1 only */
 			emp_n  = ( rx1 & ( 1 << (i-32)   ));
 			emp_n1 = ( rx1 & ( 1 << (i-32-1) ));
@@ -2032,31 +2116,41 @@ static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
 			emp_n1 = ( rx1 & 0x80000000 );
 		}
 
-		/* if at this position an full-to-empty occurs it is our start
-		 * position to pass packets upwards from.
-		 * Otherwise go on and count # of frames.
-		 * If another frame arrives right at this moment it will be
-		 * handled after next IRQ enable and be the new start position.
-		*/
+			/* if at this position an full-empty border occurs, its start pos. */
 		if ( (emp_n != 0) && (emp_n1 == 0) ) {
-			frameNum = i;
+				/* rx0,rx1 is inversed RX[01]_EMPTY */
+				start_pos = i;
 			break;
 		}
 	}
-
-	/* count all 1-bits to check how many packets are there
-	 * to process in this NAPI poll */
-	for ( i = 31; i >=0; i-- ) {
-		if ( rx1 & (1 << i ))
-			cnt++;
-		if ( rx0 & (1 << i ))
-			cnt++;
 	}
+    
+	/* 2.) Now skip from start_pos forward until empty RX BDs occur again */
+	//while (  nrframes < weight ) {
+	for( nrframes = 0; nrframes < weight; ++nrframes ){
+			
+		z77_pass_packet( dev, start_pos );			
 
-	*nrframes = cnt;
-	return frameNum;
+			cnt++;
+		start_pos++;
+		start_pos %= nrRxBds;
+
+		/* are we done ? */
+		if ( (start_pos < 32) &&  ( (rx0 & (1 <<  start_pos )    ) == 0 ) )
+		{
+			break;
 }
+		if ( (start_pos >= 32) && ( (rx1 & (1 << (start_pos-32) )) == 0 ) )
+		{
+			break;
+		}
+	}
+    
+    np->currPosRxBd = start_pos;
+    
 
+    return cnt;
+}
 /****************************************************************************/
 /** z77_poll - Rx poll function to support the NAPI functionality
  *
@@ -2065,40 +2159,33 @@ static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
  *
  *  this is a softirq so dont use potentially sleeping sys calls!
  *
- * \return 0 if all packets were processed or 1 of not all was processed
+ * \return Number of processed pakets
  *
+ * \brief  The poll routine works according to
+ *         linux/Documentation/networking/NAPI_HOWTO.txt
+ *         addendum ts: NAPI_HOWTO.txt was removed from vanilla kernel in 2.6.24
  */
+/* ts: weight == budget! see net/core/dev.c */
 static int z77_poll(struct napi_struct *napi, int budget)
 {
-	int	i=0;
-	u32 start_pos=0, rx0=0, rx1=0, nrframes=0;
+		int npackets = 0;
 	struct z77_private *np = container_of(napi, struct z77_private, napi);
     struct net_device *dev = np->dev;
 
-	/* bits in register are 1 for empty, 0 for full. we invert the logic */
-	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
-	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
-
-	if( rx0 || rx1 ) {
-		start_pos=z77_get_oldest_frame(rx0, rx1, &nrframes);
 		Z77DBG( ETHT_MESSAGE_LVL3,
 				"z77_poll: %08x%08x sp %d #fr %d\n",
 				rx1, rx0, start_pos, nrframes );
-		for (i=0; i < nrframes; i++)
-		{	/* pass new arrived packets up the stack, from
-			   start_pos (oldest) nonempty packet to recent one */
-			z77_pass_packet( dev, start_pos );
-			start_pos++;
-			start_pos %= Z077_RBD_NUM;
-		}
-	}
 
-	if ( nrframes < budget ) {
-		/* we are done, for now */
+	npackets = z77_process_rx( dev, budget );
+
+	if ( npackets < budget ) { /* we are done, for NOW */
 		napi_complete(napi);
+
+        //Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
+        
 		Z077_ENABLE_IRQ( OETH_INT_RXF );
 	}
-	return nrframes;
+	return npackets;
 }
 
 /****************************************************************************/
@@ -3383,6 +3470,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	np->instance  = chu->instance;
 	np->instCount = G_globalInstanceCount;
 	G_globalInstanceCount++;
+    np->currPosRxBd =   0;
 
 #if defined(Z77_USE_VLAN_TAGGING)
 	dev->features |= Z87_VLAN_FEATURES;
