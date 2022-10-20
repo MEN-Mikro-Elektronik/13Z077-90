@@ -1897,6 +1897,54 @@ static void cleanup_card(struct net_device *dev)
 }
 
 /****************************************************************************/
+/** Check for a network adapter of this type, and return '0' if one exists.
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return 0 or error code
+ */
+static int __init probe_z77(struct net_device *dev)
+{
+	struct z77_private *np = netdev_priv(dev);
+
+	netdev_info(dev, "%s found at 0x%08lx\n", cardname, dev->base_addr);
+
+#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
+	dev->open		= z77_open;
+	dev->stop		= z77_close;
+	dev->hard_start_xmit	= z77_send_packet;
+	dev->get_stats		= z77_get_stats;
+	dev->tx_timeout		= z77_tx_timeout;
+	dev->do_ioctl		= z77_ioctl;
+	dev->get_stats		= z77_get_stats;
+	dev->set_multicast_list	= z77_set_rx_mode;
+#else
+	dev->netdev_ops = &z77_netdev_ops;
+#endif
+	dev->watchdog_timeo = MY_TX_TIMEOUT;
+
+	/* use PHY address from passed module parameter */
+	np->mii_if.phy_id_mask 	= 0x1f;
+	np->mii_if.reg_num_mask = 0x1f;
+	np->mii_if.dev = dev;
+	np->mii_if.mdio_read = z77_mdio_read;
+	np->mii_if.mdio_write = z77_mdio_write;
+
+	/* YES, we support the ethtool utility */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
+	SET_ETHTOOL_OPS(dev, &z77_ethtool_ops);
+#else
+	dev->ethtool_ops = &z77_ethtool_ops;
+#endif
+
+	/* data setup done, now setup connection */
+	if (chipset_init(dev, 0)) {
+		netdev_err(dev, "Ethernet core init failed!\n");
+		return -ENODEV;
+	}
+	return 0;
+}
+/****************************************************************************/
 /** Timeout handler when no scheduled ETH irq arrived
  *
  * \param work		\IN handle of work_struct
@@ -2043,7 +2091,7 @@ static int z77_process_rx( struct net_device *dev, int weight )
     /* counter of processed frames */
     int cnt = 0;
     int useAlgo = 0;
-	
+
 	nrRxBds = Z077_RBD_NUM;
 
 	/* For this poll-cycle we check RX BDs only here! */
@@ -2096,12 +2144,12 @@ static int z77_process_rx( struct net_device *dev, int weight )
 		}
 	}
 	}
-    
+
 	/* 2.) Now skip from start_pos forward until empty RX BDs occur again */
 	//while (  nrframes < weight ) {
 	for( nrframes = 0; nrframes < weight; ++nrframes ){
-			
-		z77_pass_packet( dev, start_pos );			
+
+		z77_pass_packet( dev, start_pos );
 
 			cnt++;
 		start_pos++;
@@ -2117,9 +2165,9 @@ static int z77_process_rx( struct net_device *dev, int weight )
 			break;
 		}
 	}
-    
+
     np->currPosRxBd = start_pos;
-    
+
 
     return cnt;
 }
@@ -2154,7 +2202,7 @@ static int z77_poll(struct napi_struct *napi, int budget)
 		napi_complete(napi);
 
         //Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
-        
+
 		Z077_ENABLE_IRQ( OETH_INT_RXF );
 	}
 	return npackets;
@@ -3509,44 +3557,15 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
-#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
-	dev->open		= z77_open;
-	dev->stop		= z77_close;
-	dev->hard_start_xmit	= z77_send_packet;
-	dev->get_stats		= z77_get_stats;
-	dev->tx_timeout		= z77_tx_timeout;
-	dev->do_ioctl		= z77_ioctl;
-	dev->get_stats		= z77_get_stats;
-	dev->set_multicast_list	= z77_set_rx_mode;
-#else
-	dev->netdev_ops = &z77_netdev_ops;
-#endif
-	dev->watchdog_timeo	= MY_TX_TIMEOUT;
 
-	/* use PHY address from passed module parameter */
-	np->mii_if.phy_id_mask = 0x1f;
-	np->mii_if.reg_num_mask = 0x1f;
-	np->mii_if.dev = dev;
-	np->mii_if.mdio_read = z77_mdio_read;
-	np->mii_if.mdio_write = z77_mdio_write;
-
-	/* YES, we support the ethtool utility */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
-	SET_ETHTOOL_OPS(dev,    &z77_ethtool_ops);
-#else
-	dev->ethtool_ops = &z77_ethtool_ops;
-#endif
-	/* Data setup done, now setup Connection */
-	if (chipset_init(dev, 0)) {
-		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
-		goto err_free_reg;
-	} else {
-		if (register_netdev(dev) != 0) {
-			return 0;
+	/* All members set up, start probing PHY with driver builtin functions */
+	if (probe_z77(dev) == 0) {
+		if (register_netdev(dev) == 0) {
+			if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac)){
+				dev_err(&dev->dev, "Error creating sysfs file z77_eeprod_mac\n");
+				goto err_free_reg;
+			}
 		}
-		if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
-			dev_err(&dev->dev,
-				"Error creating sysfs file z77_eeprod_mac\n");
 		return 0;
 	}
 
