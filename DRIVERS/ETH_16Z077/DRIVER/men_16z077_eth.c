@@ -98,7 +98,6 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 	( OETH_INT_TXE  \
 	| OETH_INT_RXF  \
 	| OETH_INT_RXE  \
-	| OETH_INT_BUSY \
 	| OETH_INT_TXB  )
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
@@ -2237,7 +2236,7 @@ static int z77_open(struct net_device *dev)
 	z77_bd_setup(dev);
 
 	/* clear any pending spurious IRQs */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
+	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, Z077_IRQ_ALL );
 
 	/* hook in the Interrupt handler */
 	Z77DBG(ETHT_MESSAGE_LVL1, "%s: request IRQ %d\n", dev->name, dev->irq);
@@ -3397,11 +3396,6 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	if (status & OETH_INT_TXB) {	/* Transmit complete. */
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx(dev);
-	}
-
-	if (status & OETH_INT_BUSY) {	/* RX FIFO overrun ? */
-		Z77WRITE_D32(Z077_BASE,
-				Z077_REG_INT_SRC, status & ~OETH_INT_RXE );
 	}
 
 	if (status & OETH_INT_TXE) {	/* handle Tx Error */
