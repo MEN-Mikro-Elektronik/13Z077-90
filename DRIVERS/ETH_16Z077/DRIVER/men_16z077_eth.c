@@ -1991,12 +1991,6 @@ static void z77_reset_task(struct work_struct *work)
 					      struct z77_private,
 					      reset_task);
 	struct net_device *dev = np->dev;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-	struct ethtool_link_ksettings ecmd = {0};
-#else
-	struct ethtool_cmd ecmd = {0};
-#endif
-	int settings_saved=0;
 
 	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
@@ -2013,22 +2007,8 @@ static void z77_reset_task(struct work_struct *work)
 		z77_regdump(dev);
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-	settings_saved = !z77_ethtool_get_link_ksettings(dev, &ecmd);
-#else
-	settings_saved = !z77_ethtool_get_settings(dev, &ecmd);
-#endif
 	z77_close(dev);
 	z77_open(dev);
-
-	/* restore settings */
-	if (settings_saved) {
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-		z77_ethtool_set_link_ksettings(dev, &ecmd);
-	#else
-		z77_ethtool_set_settings(dev, &ecmd);
-	#endif
-	}
 
 	np->stats.tx_errors++;
 
