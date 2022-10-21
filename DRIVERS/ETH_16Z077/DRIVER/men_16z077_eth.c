@@ -594,7 +594,35 @@ static void z77_hash_table_setup(struct net_device *dev)
 	Z77WRITE_D32( Z077_BASE, Z077_REG_HASH_ADDR1, hash1 );
 	return;
 }
+/******************************************************************************
+ * return non zero if the Tx BD is full already, a stall condition occured
+ */
+static inline int __z77_tx_full(struct net_device *dev, int idx)
+{
+	int empty;
 
+	/* Z87 Core with extra TXBd empty Flags */
+	if (idx < 32) {
+		empty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1 << idx);
+	} else {
+		empty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) & (1 << (idx - 32));
+	}
+
+	return !empty;
+}
+
+static inline int z77_tx_full(struct net_device *dev)
+{
+	struct z77_private *np = netdev_priv(dev);
+	unsigned long flags;
+	int full;
+
+	spin_lock_irqsave(&np->lock, flags);
+	full = __z77_tx_full(dev, np->nCurrTbd);
+	spin_unlock_irqrestore(&np->lock, flags);
+
+	return full;
+}
 /* new API: net_device_ops moved out of struct net_device in own ops struct */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
 /******************************************************************************
@@ -1968,8 +1996,10 @@ static void z77_reset_task(struct work_struct *work)
 
 	netif_tx_disable(dev);
 
-	printk(KERN_WARNING "%s: NETDEV WATCHDOG timeout! (%s)\n",
-			dev->name, __FUNCTION__ );
+	printk(KERN_WARNING "%s: NETDEV WATCHDOG timeout! (queue %s, %s)\n",
+			dev->name,
+			netif_queue_stopped(dev) ? "stopped" : "running",
+			z77_tx_full(dev) ? "full" : "empty");
 
 	if ( np->msg_enable ) {
 		printk(KERN_WARNING
@@ -2190,6 +2220,7 @@ static int z77_poll(struct napi_struct *napi, int budget)
 		int npackets = 0;
 	struct z77_private *np = container_of(napi, struct z77_private, napi);
     struct net_device *dev = np->dev;
+    unsigned long flags;
 
 		Z77DBG( ETHT_MESSAGE_LVL3,
 				"z77_poll: %08x%08x sp %d #fr %d\n",
@@ -2199,10 +2230,11 @@ static int z77_poll(struct napi_struct *napi, int budget)
 
 	if ( npackets < budget ) { /* we are done, for NOW */
 		napi_complete(napi);
-
-        //Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, OETH_INT_RXF );
+        spin_lock_irqsave(&np->lock, flags);
 
 		Z077_ENABLE_IRQ( OETH_INT_RXF );
+        spin_unlock_irqrestore(&np->lock, flags);
+
 	}
 	return npackets;
 }
@@ -2279,32 +2311,32 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	struct z77_private *np = netdev_priv(dev);
 	struct pci_dev *pcd = np->pdev;
 	unsigned char *buf = skb->data;
-	u32 txbEmpty = 0;
 #if defined(Z77_USE_VLAN_TAGGING)
 	unsigned int vlan_id = 0;
 	unsigned int vlan_tag = 0;
 #endif
 	unsigned int frm_len = 0;
-	int i = 0;
 	unsigned char idxTx = 0;
 	dma_addr_t dma_handle = 0;
 	u8* dst = NULL;
 	u8* src = NULL;
+	unsigned long flags;
+	int i, full;
+
+	spin_lock_irqsave(&np->lock, flags);
 
 	/* place Tx request in the recent Tx BD */
 	idxTx = np->nCurrTbd;
 
-	np->stats.collisions += Z077_GET_TBD_FLAG(idxTx, OETH_TX_BD_RETRY) >> 4;
+	/* go to next Tx BD */
+	np->nCurrTbd++;
+	np->nCurrTbd %= Z077_TBD_NUM;
 
-	/* Check if this Tx BD we use now is empty. If not -> drop . */
-	if ( idxTx < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0)
-			& (1<<idxTx);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1)
-			& (1 << (idxTx-32));
+	full = __z77_tx_full(dev, idxTx);
 
-	if (!txbEmpty) { /* congestion? */
+	spin_unlock_irqrestore(&np->lock, flags);
+
+	if (full) {
 		netif_stop_queue(dev);
 		np->stats.tx_dropped++;
 
@@ -2316,6 +2348,8 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 		return 1;
 #endif
 	}
+
+	np->stats.collisions += Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_RETRY) >> 4;
 
 	Z77DBG(ETHT_MESSAGE_LVL2, "%s: z77_send_packet[%d] len 0x%04x\n",
 			dev->name, idxTx, skb->len );
@@ -2394,21 +2428,8 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	/* .. and free this skb */
 	dev_kfree_skb(skb);
 
-	/* go to next Tx BD */
-	np->nCurrTbd++;
-	np->nCurrTbd %= Z077_TBD_NUM;
-
-	/* Check if the next Tx BD is empty. If not -> stall . */
-	idxTx = np->nCurrTbd;
-	/* Z87 Core with extra TXBd empty Flags */
-	if ( idxTx < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0)
-			& (1<<idxTx);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1)
-			& (1 << (idxTx-32));
-
-	if (!txbEmpty) { /* congestion? */
+	/* congestion */
+	if (z77_tx_full(dev)) {
 		netif_stop_queue(dev);
 		Z77DBG(ETHT_MESSAGE_LVL2, "%s: stop_queue\n", __FUNCTION__ );
 	}
@@ -3380,17 +3401,28 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct z77_private *np = netdev_priv(dev);
 	int handled = 0;
+	u32 status, mask;
+	unsigned long flags;
 
-	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
+	spin_lock_irqsave(&np->lock, flags);
+
+	status = Z77READ_D32(Z077_BASE, Z077_REG_INT_SRC) & Z077_IRQ_ALL;
+	mask = Z77READ_D32(Z077_BASE, Z077_REG_INT_MASK);
+	status &= mask;
 	if (!status) {
-		goto out;	/* It wasnt me, ciao. */
+		goto out;
 	}
 
+	/* disable interrupts */
+	Z077_DISABLE_IRQ(Z077_IRQ_ALL);
+
 	if (status & OETH_INT_RXF) {	/* Got a packet. */
-		/* reenabled in NAPI poll routine */
-		Z077_DISABLE_IRQ( OETH_INT_RXF );
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-		napi_schedule(&np->napi);
+		mask &= ~OETH_INT_RXF;
+		if (likely(napi_schedule_prep(&np->napi))) {
+			__napi_schedule(&np->napi);
+		} else {
+			np->stats.rx_dropped++;
+		}
 	}
 
 	if (status & OETH_INT_TXB) {	/* Transmit complete. */
@@ -3407,9 +3439,15 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_rx_err(dev);
 	}
+	/* acknowledge interrupts */
+	Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status);
+
+	/* enable interrupts */
+	Z077_ENABLE_IRQ(mask);
 
 	handled = 1;
 out:
+	spin_unlock_irqrestore(&np->lock, flags);
 	return IRQ_RETVAL(handled);
 }
 
