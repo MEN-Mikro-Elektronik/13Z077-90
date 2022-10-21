@@ -92,13 +92,9 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 /* length of name in ID EEPROM */
 #define ID_EE_NAME_LEN		6
 #define RX_BD_ALL_FULL		(0xffffffff)
-
+#define TX_TIMER_INTERVAL_NSEC          10000
 /* all used IRQs on the Z87 */
-#define Z077_IRQ_ALL    \
-	( OETH_INT_TXE  \
-	| OETH_INT_RXF  \
-	| OETH_INT_RXE  \
-	| OETH_INT_TXB  )
+#define Z077_IRQ_ALL (OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE)
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
@@ -213,6 +209,8 @@ struct z77_private {
 	struct work_struct reset_task;
 	/*!< period timer for linkchange poll */
 	struct timer_list timer;
+	/*!< tx complete timer */
+	struct hrtimer tx_timer;
 #if defined(Z77_USE_VLAN_TAGGING)
 	/*!< VLAN tagging group */
 	struct vlan_group *vlgrp;
@@ -824,6 +822,29 @@ static void z77_timerfunc(struct timer_list *list)
 
 }
 
+static enum hrtimer_restart z77_tx_timer(struct hrtimer *timer)
+{
+	struct z77_private *np= container_of(timer, struct z77_private, tx_timer);
+	struct net_device *dev = np->dev;
+
+	if (!netif_running(dev))
+		return HRTIMER_NORESTART;
+
+	if (!netif_queue_stopped(dev))
+		return HRTIMER_NORESTART;
+
+	if (z77_tx_full(dev)) {
+		/* still full */
+		hrtimer_forward_now(&np->tx_timer, TX_TIMER_INTERVAL_NSEC);
+		return HRTIMER_RESTART;
+	}
+
+	/* wakeup queue */
+	netif_wake_queue(dev);
+
+	return HRTIMER_NORESTART;
+}
+
 /******************************************************************************
  ** z77_regdump - Dump the contents of the 16Z077/087 Registers and BDs
  *
@@ -1399,22 +1420,7 @@ static struct ethtool_ops z77_ethtool_ops = {
 	.self_test	= z77_ethtool_testmode,
 };
 
-/* return non zero if the Tx BD is full already, a stall condition occurred */
-static u32 tx_full(struct net_device *dev)
-{
-	int txbEmpty;
-	struct z77_private *np = netdev_priv(dev);
 
-	/* Z87 Core with extra TXBd empty Flags */
-	if ( np->nCurrTbd < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) &
-			(1 << np->nCurrTbd);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) &
-			(1 << (np->nCurrTbd-32));
-
-	return !txbEmpty;
-}
 
 /****************************************************************************/
 /** z77_bd_setup - perform initialization of buffer descriptors
@@ -2027,7 +2033,7 @@ static void z77_reset_task(struct work_struct *work)
 	np->stats.tx_errors++;
 
 	/* If we have space available to accept new transmits, do so */
-	if (!tx_full(dev))
+	if (netif_queue_stopped(dev))
 		netif_wake_queue(dev);
 }
 
@@ -2229,13 +2235,12 @@ static int z77_poll(struct napi_struct *napi, int budget)
 	npackets = z77_process_rx( dev, budget );
 
 	if ( npackets < budget ) { /* we are done, for NOW */
-		napi_complete(napi);
-        spin_lock_irqsave(&np->lock, flags);
-
-		Z077_ENABLE_IRQ( OETH_INT_RXF );
-        spin_unlock_irqrestore(&np->lock, flags);
-
+		napi_complete_done(napi, npackets);
 	}
+	spin_lock_irqsave(&np->lock, flags);
+	Z077_ENABLE_IRQ( OETH_INT_RXF );
+	spin_unlock_irqrestore(&np->lock, flags);
+
 	return npackets;
 }
 
@@ -2285,6 +2290,8 @@ static int z77_open(struct net_device *dev)
 
 	napi_enable(&np->napi);
 
+	hrtimer_init(&np->tx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED_SOFT);
+	np->tx_timer.function = z77_tx_timer;
 	netif_start_queue(dev);
 
 	/* and let the games begin... */
@@ -2337,11 +2344,9 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	spin_unlock_irqrestore(&np->lock, flags);
 
 	if (full) {
-		netif_stop_queue(dev);
-		np->stats.tx_dropped++;
-
-		/* free this skb */
+		netdev_warn(dev, "tx full\n");
 		dev_kfree_skb(skb);
+		np->stats.tx_dropped++;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 		return NETDEV_TX_BUSY;
 #else
@@ -2431,7 +2436,9 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	/* congestion */
 	if (z77_tx_full(dev)) {
 		netif_stop_queue(dev);
-		Z77DBG(ETHT_MESSAGE_LVL2, "%s: stop_queue\n", __FUNCTION__ );
+		hrtimer_start(&np->tx_timer,
+			      TX_TIMER_INTERVAL_NSEC,
+			      HRTIMER_MODE_REL_PINNED_SOFT);
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 	return NETDEV_TX_OK;
@@ -3231,34 +3238,6 @@ cont_init:
 	return(0);
 }
 
-/*******************************************************************/
-/** The interrupt context Tx packet handler
- *
- * \brief Called from within main ISR context.
- *		  unmaps allocated PCI transfer memory region and updates
- *        stats info. No spin_lock here because main irq routine does
- *        local Eth core IRQ disabling already.
- *
- * \param dev		\IN net_device struct for this NIC
- *
- * \return -
- */
-static void z77_tx(struct net_device *dev)
-{
-	struct z77_private *np = netdev_priv(dev);
-
-	pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma,
-			Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
-	np->txIrq++;
-	np->txIrq%= Z077_TBD_NUM;
-	np->stats.tx_packets++;
-
-	/* If we had stopped the queue due to a "tx full" condition,
-	 * wake up the queue. */
-	if (netif_queue_stopped(dev))
-		netif_wake_queue(dev);
-}
-
 /*****************************************************************************/
 /** z77_pass_packet - packet passing function for one ETH frame
  *
@@ -3423,11 +3402,6 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 		} else {
 			np->stats.rx_dropped++;
 		}
-	}
-
-	if (status & OETH_INT_TXB) {	/* Transmit complete. */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-		z77_tx(dev);
 	}
 
 	if (status & OETH_INT_TXE) {	/* handle Tx Error */
