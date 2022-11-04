@@ -959,7 +959,7 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	} while ((miival & OETH_MIISTATUS_BUSY) && tout);
 
 	if (!tout) {
-		printk(KERN_ERR "*** MII Read timeout!\n");
+		netdev_err(dev, "MII Read timeout!\n");
 		retVal = -1;
 		goto mdio_read_out;
 	}
@@ -977,7 +977,7 @@ static int z77_mdio_read(struct net_device *dev, int phy_id, int location)
 	} while ((miival & OETH_MIISTATUS_BUSY) && tout);
 
 	if (!tout) {
-		printk(KERN_ERR "*** MII Read timeout!\n");
+		netdev_err(dev, "MII Read timeout!\n");
 		retVal = -1;
 		goto mdio_read_out;
 	}
@@ -1017,7 +1017,7 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 	} while ((miival & OETH_MIISTATUS_BUSY) && tout);
 
 	if (!tout) {
-		printk(KERN_ERR "*** MII Write timeout!\n");
+		netdev_err(dev, "MII Write timeout!\n");
 		goto mdio_write_out;
 	}
 
@@ -1033,7 +1033,7 @@ static void z77_mdio_write(struct net_device *dev, int phy_id,
 	} while ((miival & OETH_MIISTATUS_BUSY) && tout);
 
 	if (!tout) {
-		printk(KERN_ERR "*** MII Write timeout!\n");
+		netdev_err(dev, "MII Write timeout!\n");
 		goto mdio_write_out;
 	}
 
@@ -1675,7 +1675,7 @@ static int z77_phy_init(struct net_device *dev)
 	/* on F218 revert the Link and activity LED */
 	dat = z77_mdio_read(dev, phyAddr, MII_PHYSID2);
 	if ((dat == PHY_ID2_KSZ8041_1) || (dat == PHY_ID2_KSZ8041_2)) {
-		printk(KERN_INFO "found PHY KSZ8041. reverting Link/Act LED");
+		netdev_info(dev, "found PHY KSZ8041, reverting Link/Act LED\n");
 		dat = z77_mdio_read(dev, np->mii_if.phy_id, 0x1e);
 		/* just set bit14, bit 15 is reserved (datasheet p.29) */
 		dat |= 1 << 14;
@@ -1697,8 +1697,7 @@ static int z77_phy_init(struct net_device *dev)
 		return -ENODEV;
 
 	/* if we're here, none of the PHYs could be initialized */
-	printk(KERN_ERR
-	       "*** z77_phy_init: no link found, check cable connection\n");
+	netdev_err(dev, "PHY init failed, check cable.\n");
 	return -ENODEV;
 }
 
@@ -1723,15 +1722,14 @@ static int z77_phy_identify(struct net_device *dev, u8 phyAddr)
 	while (z077PhyAttachTbl[i].ident != 0xffff) {
 		if (data == z077PhyAttachTbl[i].ident) {
 			id2 = z77_mdio_read(dev, phyAddr, MII_PHYSID2);
-			printk(KERN_INFO
-			       "PHY %s found. (MII_PHYSID1: 0x%04x MII_PHYSID2: 0x%04x)\n",
-			       z077PhyAttachTbl[i].name, data, id2);
+			netdev_info(dev, "PHY %s found. (MII_PHYSID1: 0x%04x MII_PHYSID2: 0x%04x)\n",
+				    z077PhyAttachTbl[i].name, data, id2);
 			return 0;
 		}
 		i++;
 	}
 	/* found no known PHY in table, error */
-	printk(KERN_ERR "*** z77_phy_identify: unknown Phy ID 0x%04x!\n", data);
+	netdev_err(dev, "unknown Phy ID 0x%04x!\n", data);
 	return -ENODEV;
 }
 
@@ -1834,7 +1832,7 @@ static int z77_init_phymode(struct net_device *dev, u8 phyAddr)
 		dat |= (1<<12); /* bit 0.12 = autonegotiation enable */
 		z77_mdio_write(dev, np->mii_if.phy_id, MII_BMCR, dat);
 		if ((res = mii_nway_restart(&np->mii_if))) {
-			printk(KERN_ERR	"*** setting autoneg. PHY mode failed\n");
+			netdev_err(dev, "unable to set autonegotiation\n");
 			return -EINVAL;
 		}
 	} else {
@@ -1847,7 +1845,7 @@ static int z77_init_phymode(struct net_device *dev, u8 phyAddr)
 		/* first, a dummy read, needed to latch some MII phys */
 		dat = z77_mdio_read(dev, np->mii_if.phy_id, MII_BMCR);
 		if ((res = mii_ethtool_sset(&np->mii_if, &cmd)))
-			printk(KERN_INFO "PHY setting fixed mode failed - fixed MEN Phy\n");
+			netdev_info(dev, "PHY setting fixed mode failed - fixed MEN Phy\n");
 	}
 	Z77DBG(ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__);
 	return 0;
@@ -1865,7 +1863,7 @@ static int z77_do_autonegotiation(struct net_device *dev)
 	int rv = 0;
 
 	if (z77_phy_init(dev)) {
-		printk("*** PHY Initialization failed!\n");
+		netdev_err(dev, "PHY Initialization failed!\n");
 		rv = -ENODEV;
 	}
 
@@ -2197,8 +2195,7 @@ static int z77_open(struct net_device *dev)
 	netif_carrier_off(dev);
 	/* do PHY/MAC initialization with forced mode or autonegotiation */
 	if (chipset_init(dev, 1)) {
-		printk(KERN_ERR
-		       "*** z77_open: initializing Ethernet core failed!\n");
+		netdev_err(dev, "initializing Ethernet core failed!\n"); ;
 		return -ENODEV;
 	}
 	/* setup the Tx/Rx buffer descriptors */
@@ -2210,8 +2207,7 @@ static int z77_open(struct net_device *dev)
 	/* hook in the Interrupt handler */
 	Z77DBG(ETHT_MESSAGE_LVL1, "%s: request IRQ %d\n", dev->name, dev->irq);
 	if (request_irq(dev->irq, z77_irq, IRQF_SHARED, cardname, dev)) {
-		printk(KERN_ERR
-		       "*** %s: unable to get IRQ %d.\n", dev->name, dev->irq);
+		netdev_err(dev, "unable to request IRQ %d\n", dev->irq);
 		return -ENOMEM;
 	}
 
@@ -3234,8 +3230,7 @@ static void z77_pass_packet(struct net_device *dev, unsigned int idx)
 		smp_mb();
 
 	} else {
-		printk(KERN_WARNING "*** %s:Mem squeeze! drop packet\n",
-				dev->name);
+		netdev_warn(dev, "no skb\n");
 		np->stats.rx_dropped++;
 	}
 }
