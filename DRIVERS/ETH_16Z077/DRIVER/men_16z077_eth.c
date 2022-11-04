@@ -3385,12 +3385,10 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	}
 
 	if (status & OETH_INT_TXE) {	/* handle Tx Error */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx_err(dev);
 	}
 
 	if (status & OETH_INT_RXE) {	/* handle Rx Error */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_rx_err(dev);
 	}
 	/* acknowledge interrupts */
