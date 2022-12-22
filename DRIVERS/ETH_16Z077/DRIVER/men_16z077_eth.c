@@ -210,7 +210,11 @@ struct z77_private {
 	/*!< period timer for linkchange poll */
 	struct timer_list timer;
 	/*!< tx complete timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	struct tasklet_hrtimer tx_timer;
+#else
 	struct hrtimer tx_timer;
+#endif
 #if defined(Z77_USE_VLAN_TAGGING)
 	/*!< VLAN tagging group */
 	struct vlan_group *vlgrp;
@@ -824,7 +828,11 @@ static void z77_timerfunc(struct timer_list *list)
 
 static enum hrtimer_restart z77_tx_timer(struct hrtimer *timer)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	struct z77_private *np= container_of(timer, struct z77_private, tx_timer.timer);
+#else
 	struct z77_private *np= container_of(timer, struct z77_private, tx_timer);
+#endif
 	struct net_device *dev = np->dev;
 
 	if (!netif_running(dev))
@@ -835,7 +843,13 @@ static enum hrtimer_restart z77_tx_timer(struct hrtimer *timer)
 
 	if (z77_tx_full(dev)) {
 		/* still full */
-		hrtimer_forward_now(&np->tx_timer, TX_TIMER_INTERVAL_NSEC);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+		tasklet_hrtimer_start(&np->tx_timer,
+					ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
+					HRTIMER_MODE_REL);
+#else
+		hrtimer_forward_now(&np->tx_timer, ns_to_ktime(TX_TIMER_INTERVAL_NSEC));
+#endif
 		return HRTIMER_RESTART;
 	}
 
@@ -2208,9 +2222,7 @@ static int z77_poll(struct napi_struct *napi, int budget)
     struct net_device *dev = np->dev;
     unsigned long flags;
 
-		Z77DBG( ETHT_MESSAGE_LVL3,
-				"z77_poll: %08x%08x sp %d #fr %d\n",
-				rx1, rx0, start_pos, nrframes );
+	Z77DBG( ETHT_MESSAGE_LVL3,"--> z77_poll:\n");
 
 	npackets = z77_process_rx( dev, budget );
 
@@ -2270,8 +2282,15 @@ static int z77_open(struct net_device *dev)
 
 	napi_enable(&np->napi);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	tasklet_hrtimer_init(&np->tx_timer,
+			     z77_tx_timer,
+			     CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+#else
 	hrtimer_init(&np->tx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED_SOFT);
 	np->tx_timer.function = z77_tx_timer;
+#endif
+
 	netif_start_queue(dev);
 
 	/* and let the games begin... */
@@ -2416,9 +2435,15 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	/* congestion */
 	if (z77_tx_full(dev)) {
 		netif_stop_queue(dev);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+		tasklet_hrtimer_start(&np->tx_timer,
+				      ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
+				      HRTIMER_MODE_REL);
+#else
 		hrtimer_start(&np->tx_timer,
-			      TX_TIMER_INTERVAL_NSEC,
+			      ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
 			      HRTIMER_MODE_REL_PINNED_SOFT);
+#endif
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 	return NETDEV_TX_OK;
