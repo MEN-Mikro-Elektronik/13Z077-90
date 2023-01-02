@@ -3354,6 +3354,13 @@ static int z77_close(struct net_device *dev)
 
 	free_irq(dev->irq, dev);
 
+	/* cancel tx_timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	tasklet_hrtimer_cancel(&np->tx_timer);
+#else
+	hrtimer_cancel(&np->tx_timer);
+#endif
+
 	/* free DMA resources */
 	for (i = 0; i < Z077_RBD_NUM; i++ )
 		dma_free_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
