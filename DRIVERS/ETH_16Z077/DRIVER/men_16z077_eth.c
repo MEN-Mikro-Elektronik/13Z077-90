@@ -92,14 +92,9 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 /* length of name in ID EEPROM */
 #define ID_EE_NAME_LEN		6
 #define RX_BD_ALL_FULL		(0xffffffff)
-
+#define TX_TIMER_INTERVAL_NSEC          10000
 /* all used IRQs on the Z87 */
-#define Z077_IRQ_ALL    \
-	( OETH_INT_TXE  \
-	| OETH_INT_RXF  \
-	| OETH_INT_RXE  \
-	| OETH_INT_BUSY \
-	| OETH_INT_TXB  )
+#define Z077_IRQ_ALL (OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE)
 
 /* from 3.1 on (acc. to free electrons) DMA bit mask changed */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
@@ -177,6 +172,8 @@ typedef struct z77_i2c_msg_st
  */
 /*@{*/
 struct z77_private {
+    /* current position of the Rx Bd */
+    u8 currPosRxBd;
 	/*!< how long is device open already */
 	long open_time;
 	/*!< Our local flags */
@@ -212,8 +209,12 @@ struct z77_private {
 	struct work_struct reset_task;
 	/*!< period timer for linkchange poll */
 	struct timer_list timer;
-	/*!< previous link state */
-	u32 prev_linkstate;
+	/*!< tx complete timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	struct tasklet_hrtimer tx_timer;
+#else
+	struct hrtimer tx_timer;
+#endif
 #if defined(Z77_USE_VLAN_TAGGING)
 	/*!< VLAN tagging group */
 	struct vlan_group *vlgrp;
@@ -595,7 +596,35 @@ static void z77_hash_table_setup(struct net_device *dev)
 	Z77WRITE_D32( Z077_BASE, Z077_REG_HASH_ADDR1, hash1 );
 	return;
 }
+/******************************************************************************
+ * return non zero if the Tx BD is full already, a stall condition occured
+ */
+static inline int __z77_tx_full(struct net_device *dev, int idx)
+{
+	int empty;
 
+	/* Z87 Core with extra TXBd empty Flags */
+	if (idx < 32) {
+		empty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) & (1 << idx);
+	} else {
+		empty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) & (1 << (idx - 32));
+	}
+
+	return !empty;
+}
+
+static inline int z77_tx_full(struct net_device *dev)
+{
+	struct z77_private *np = netdev_priv(dev);
+	unsigned long flags;
+	int full;
+
+	spin_lock_irqsave(&np->lock, flags);
+	full = __z77_tx_full(dev, np->nCurrTbd);
+	spin_unlock_irqrestore(&np->lock, flags);
+
+	return full;
+}
 /* new API: net_device_ops moved out of struct net_device in own ops struct */
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
 /******************************************************************************
@@ -623,7 +652,7 @@ static int z77_set_mac_address(struct net_device *dev, void *p)
 	z77_store_mac( dev );
 
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	return 0;
@@ -773,7 +802,6 @@ static void z77_timerfunc(unsigned long dat)
 static void z77_timerfunc(struct timer_list *list)
 #endif
 {
-	u32 linkstate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	struct net_device *dev = (struct net_device *)dat;
 	struct z77_private *np = netdev_priv(dev);
@@ -781,27 +809,54 @@ static void z77_timerfunc(struct timer_list *list)
 	struct z77_private *np = from_timer(np, list, timer);
 	struct net_device *dev = np->dev;
 #endif
-	linkstate = mii_link_ok(&np->mii_if);
-	if ( np->prev_linkstate != linkstate ) {
-		if ( linkstate == 1 ) { /* link came up: restart IP core */
-			z77_reset( dev );
-			Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
-			np->nCurrTbd = 0;
-			printk( KERN_INFO MEN_Z77_DRV_NAME
-					" (%s): link is up\n", dev->name);
-			netif_carrier_on(dev);
-		} else { /* link went down: close device */
-			printk( KERN_INFO MEN_Z77_DRV_NAME
-					" (%s): link is down\n", dev->name);
-			netif_carrier_off(dev);
-		}
-		np->prev_linkstate = linkstate;
+	if (mii_link_ok(&np->mii_if) && !netif_carrier_ok(dev)) { /* link came up: restart IP core */
+		z77_reset( dev );
+		Z077_SET_MODE_FLAG( OETH_MODER_RXEN | OETH_MODER_TXEN );
+		np->nCurrTbd = 0;
+		netdev_info(dev, "Link is up.\n");
+		netif_carrier_on(dev);
+	} else if (netif_carrier_ok(dev) && !mii_link_ok(&np->mii_if)) { /* link went down: close device */
+		netdev_info(dev, "Link is down.\n");
+		netif_carrier_off(dev);
 	}
 
 	/* restart timer */
 	np->timer.expires = jiffies + CONFIG_HZ / 2;
 	add_timer(&np->timer);
 
+}
+
+static enum hrtimer_restart z77_tx_timer(struct hrtimer *timer)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	struct z77_private *np= container_of(timer, struct z77_private, tx_timer.timer);
+#else
+	struct z77_private *np= container_of(timer, struct z77_private, tx_timer);
+#endif
+	struct net_device *dev = np->dev;
+
+	if (!netif_running(dev))
+		return HRTIMER_NORESTART;
+
+	if (!netif_queue_stopped(dev))
+		return HRTIMER_NORESTART;
+
+	if (z77_tx_full(dev)) {
+		/* still full */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+		tasklet_hrtimer_start(&np->tx_timer,
+					ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
+					HRTIMER_MODE_REL);
+#else
+		hrtimer_forward_now(&np->tx_timer, ns_to_ktime(TX_TIMER_INTERVAL_NSEC));
+#endif
+		return HRTIMER_RESTART;
+	}
+
+	/* wakeup queue */
+	netif_wake_queue(dev);
+
+	return HRTIMER_NORESTART;
 }
 
 /******************************************************************************
@@ -1166,7 +1221,7 @@ static int z77_ethtool_set_link_ksettings(struct net_device *dev,
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 	return res;
 }
 #else
@@ -1277,7 +1332,7 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 
 	spin_unlock_irqrestore (&np->lock, flags);
 	/* force link-up */
-	np->prev_linkstate = 0;
+	netif_carrier_off(dev);
 	return res;
 }
 #endif
@@ -1379,44 +1434,8 @@ static struct ethtool_ops z77_ethtool_ops = {
 	.self_test	= z77_ethtool_testmode,
 };
 
-/* return non zero if the Tx BD is full already, a stall condition occurred */
-static u32 tx_full(struct net_device *dev)
-{
-	int txbEmpty;
-	struct z77_private *np = netdev_priv(dev);
 
-	/* Z87 Core with extra TXBd empty Flags */
-	if ( np->nCurrTbd < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0) &
-			(1 << np->nCurrTbd);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1) &
-			(1 << (np->nCurrTbd-32));
 
-	return !txbEmpty;
-}
-
-/* ts@men: we need the true linkstate for F218R01-01 */
-static ssize_t z77_show_linkstate(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	unsigned int bsmr = 0;
-	struct z77_private *np  = netdev_priv(to_net_dev(dev));
-#define  MII_BMSR_LINK_VALID	0x0004
-	/* ts: initially the link status isn't up to date, read it twice.
-	 * This is often a latched Register inside PHYs */
-	bsmr = z77_mdio_read(np->dev, np->mii_if.phy_id , MII_BMSR );
-	bsmr = z77_mdio_read(np->dev, np->mii_if.phy_id , MII_BMSR );
-	return sprintf(buf, "%c\n", bsmr & MII_BMSR_LINK_VALID ? '1' : '0' );
-}
-
-static ssize_t z77_set_linkstate(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	return 0;	/* no op */
-}
-
-static DEVICE_ATTR(linkstate, 0644, z77_show_linkstate, z77_set_linkstate );
 /****************************************************************************/
 /** z77_bd_setup - perform initialization of buffer descriptors
  *
@@ -1881,6 +1900,8 @@ static int z77_init_phymode (struct net_device *dev, u8 phyAddr)
 			Z077_CLR_MODE_FLAG(OETH_MODER_FULLD);
 		}
 
+		/* first, a dummy read, needed to latch some MII phys */
+		dat = z77_mdio_read(dev, np->mii_if.phy_id, MII_BMCR);
 		if ((res = mii_ethtool_sset(&np->mii_if, &cmd))) {
 			printk(KERN_INFO
 				"PHY setting fixed mode failed - fixed MEN Phy\n");
@@ -1923,6 +1944,54 @@ static void cleanup_card(struct net_device *dev)
 }
 
 /****************************************************************************/
+/** Check for a network adapter of this type, and return '0' if one exists.
+ *
+ * \param dev			\IN net_device struct for this NIC
+ *
+ * \return 0 or error code
+ */
+static int __init probe_z77(struct net_device *dev)
+{
+	struct z77_private *np = netdev_priv(dev);
+
+	netdev_info(dev, "%s found at 0x%08lx\n", cardname, dev->base_addr);
+
+#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
+	dev->open		= z77_open;
+	dev->stop		= z77_close;
+	dev->hard_start_xmit	= z77_send_packet;
+	dev->get_stats		= z77_get_stats;
+	dev->tx_timeout		= z77_tx_timeout;
+	dev->do_ioctl		= z77_ioctl;
+	dev->get_stats		= z77_get_stats;
+	dev->set_multicast_list	= z77_set_rx_mode;
+#else
+	dev->netdev_ops = &z77_netdev_ops;
+#endif
+	dev->watchdog_timeo = MY_TX_TIMEOUT;
+
+	/* use PHY address from passed module parameter */
+	np->mii_if.phy_id_mask 	= 0x1f;
+	np->mii_if.reg_num_mask = 0x1f;
+	np->mii_if.dev = dev;
+	np->mii_if.mdio_read = z77_mdio_read;
+	np->mii_if.mdio_write = z77_mdio_write;
+
+	/* YES, we support the ethtool utility */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
+	SET_ETHTOOL_OPS(dev, &z77_ethtool_ops);
+#else
+	dev->ethtool_ops = &z77_ethtool_ops;
+#endif
+
+	/* data setup done, now setup connection */
+	if (chipset_init(dev, 0)) {
+		netdev_err(dev, "Ethernet core init failed!\n");
+		return -ENODEV;
+	}
+	return 0;
+}
+/****************************************************************************/
 /** Timeout handler when no scheduled ETH irq arrived
  *
  * \param work		\IN handle of work_struct
@@ -1936,19 +2005,15 @@ static void z77_reset_task(struct work_struct *work)
 					      struct z77_private,
 					      reset_task);
 	struct net_device *dev = np->dev;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-	struct ethtool_link_ksettings ecmd = {0};
-#else
-	struct ethtool_cmd ecmd = {0};
-#endif
-	int settings_saved=0;
 
 	Z077_DISABLE_IRQ( Z077_IRQ_ALL );
 
 	netif_tx_disable(dev);
 
-	printk(KERN_WARNING "%s: NETDEV WATCHDOG timeout! (%s)\n",
-			dev->name, __FUNCTION__ );
+	printk(KERN_WARNING "%s: NETDEV WATCHDOG timeout! (queue %s, %s)\n",
+			dev->name,
+			netif_queue_stopped(dev) ? "stopped" : "running",
+			z77_tx_full(dev) ? "full" : "empty");
 
 	if ( np->msg_enable ) {
 		printk(KERN_WARNING
@@ -1956,27 +2021,13 @@ static void z77_reset_task(struct work_struct *work)
 		z77_regdump(dev);
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-	settings_saved = !z77_ethtool_get_link_ksettings(dev, &ecmd);
-#else
-	settings_saved = !z77_ethtool_get_settings(dev, &ecmd);
-#endif
 	z77_close(dev);
 	z77_open(dev);
-
-	/* restore settings */
-	if (settings_saved) {
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
-		z77_ethtool_set_link_ksettings(dev, &ecmd);
-	#else
-		z77_ethtool_set_settings(dev, &ecmd);
-	#endif
-	}
 
 	np->stats.tx_errors++;
 
 	/* If we have space available to accept new transmits, do so */
-	if (!tx_full(dev))
+	if (netif_queue_stopped(dev))
 		netif_wake_queue(dev);
 }
 
@@ -2001,20 +2052,102 @@ static void z77_tx_timeout(struct net_device *dev)
 }
 
 /****************************************************************************/
-/** When RX0 or RX1 nonempty, return oldest entry. This is tailored for the
- *  2 32bit Registers RX0_EMPTY, RX1_EMPTY.
+/** z77_process_rx - process each nonempty Rx BD
  *
- * \return oldest (rightmost) bit in Rx0/1_EMPTY
+ * \param dev	 	\IN net_device struct of this interface
+ * \param weight	\IN allowed # of packets to process in a call
+ *
+ * \brief
+ * Without Rx position info determining oldest Rx frame
+ * is complicated, several basic situations are possible:
+ *
+ * \verbatim
+ * <-- BD fill direction of Z87 core -----
+ * 63      RX1      32 31       RX0      0
+ *  --------------------------------------
+ * |                  |             oXXXXX|
+ *  -------------------------------------^
+ * |              oXXX|XXXXXXXXXXXXXX     |
+ *  --------------------------------^-----
+ * |       oXXXXXXX   |                   |
+ *  --------------^-----------------------
+ * |XXXXXXX           |                  o|
+ *  ------^-------------------------------
+ * |XX                |             oXXXXX|
+ *  -^------------------------------------
+ * |XXXXXXXXXXXXXXXXXX|XX              oXX|
+ *  --------------------^-----------------
+ * |XX            oXXX|XXXXXXXXXXXXXXXXXXX|
+ *  -^------------------------------------
+ *
+ * ^ = oldest Rx frame in this cycle, which is to be passed to stack first
+ * o = position available from new Rx count register 0x70
+ *
+ * From the hardware we can expect, that there is always only one connected
+ * region of full BDs ('x'). However, we read rx0 first and then rx1. So the
+ * rx0 and rx1 variables reflect the status of the hardware at different times.
+ * As a result we may get disconnected regions of Xes. This is why the
+ * algorithm did not work properly at former releases of this driver, resulting
+ * in a loss of synchronization and yielding packets in the wrong order. This
+ * occured at about 1 in a million packets. Now we normally do not use the
+ * algorithm, but remember the position of the last position we procecced + 1
+ * instead. However this method may also get out of sync if we unplug/plug the
+ * ethernt cable. Then we do not have another chance than using the algo. This
+ * Example to show how the algo may fail:
+ * |                  | oXXXXXXXXXXXX     |  hw register state at time of rx0 read
+ * |              oXXX|XXXXXXXXXXXXXX     |  hw register state at time of rx1 read
+ * Note that some packets have been received between rx0 and rx1 read!
+ * |              oXXX| oXXXXXXXXXXXX     |  what we get in the rx1 und rx0 variables
+ * It seems that there is a hole in the region.
+ *
+ *
+ * simplified Algorithm: 1. skip from Rx BD63 backwards until first full-empty
+ *                          transition found. This is oldest Rx BD (startpos)
+ *                       2. from startpos skip up and pass every nonempty BD
+ *                          to network stack
+ * \endverbatim
+ *
+ * PS: should ever Rx BD organisation change, this needs to be reworked.
+ *     Code in here implies 64 Rx BDs in 2x32bit Registers!.
  */
-static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
+static int z77_process_rx( struct net_device *dev, int weight )
 {
-	volatile u32 frameNum=0, emp_n=0, emp_n1=0;
+	int	nrframes = 0;
+	unsigned int start_pos=0, rx0, rx1, emp_n=0, emp_n1=0;
+	unsigned int nrRxBds = 0;
 	int i;
-	u32 cnt=0;
+	struct z77_private *np 	= netdev_priv(dev);
+    /* counter of processed frames */
+    int cnt = 0;
+    int useAlgo = 0;
 
-	for ( i = 63; i >=0; i-- )
-	{	/* the 64 Rx BDs are split in 2 x 32bit registers,
-		   check boundaries */
+	nrRxBds = Z077_RBD_NUM;
+
+	/* For this poll-cycle we check RX BDs only here! */
+	/* Be aware, that rx0 and rx1 reflect the state of hardware register at different times! */
+	/* Note that some packets may be received between rx0 and rx1 read! */
+	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
+	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
+
+    start_pos = np->currPosRxBd;
+
+    if ( ( (start_pos < 32)  && ( (rx0 & (1 <<  start_pos)     ) == 0 ))
+    ||   ( (start_pos >= 32) && ( (rx1 & (1 << (start_pos-32) )) == 0 )) )
+	{
+        if((rx0 != 0) || (rx1 != 0))
+        {
+            useAlgo = 1;
+        }
+        else
+        {
+            return 0;
+        }
+	}
+
+	if( useAlgo ) {
+		/* This is The Legendary Algorithm... */
+		for (i = 63; i >=0; i--) {
+			/* the 64 Rx BDs are split in 2 x 32bit registers, check boundaries */
 		if (i > 32) { /* 63..33  RX1 only */
 			emp_n  = ( rx1 & ( 1 << (i-32)   ));
 			emp_n1 = ( rx1 & ( 1 << (i-32-1) ));
@@ -2032,31 +2165,41 @@ static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
 			emp_n1 = ( rx1 & 0x80000000 );
 		}
 
-		/* if at this position an full-to-empty occurs it is our start
-		 * position to pass packets upwards from.
-		 * Otherwise go on and count # of frames.
-		 * If another frame arrives right at this moment it will be
-		 * handled after next IRQ enable and be the new start position.
-		*/
+			/* if at this position an full-empty border occurs, its start pos. */
 		if ( (emp_n != 0) && (emp_n1 == 0) ) {
-			frameNum = i;
+				/* rx0,rx1 is inversed RX[01]_EMPTY */
+				start_pos = i;
+			break;
+		}
+	}
+	}
+
+	/* 2.) Now skip from start_pos forward until empty RX BDs occur again */
+	//while (  nrframes < weight ) {
+	for( nrframes = 0; nrframes < weight; ++nrframes ){
+
+		z77_pass_packet( dev, start_pos );
+
+			cnt++;
+		start_pos++;
+		start_pos %= nrRxBds;
+
+		/* are we done ? */
+		if ( (start_pos < 32) &&  ( (rx0 & (1 <<  start_pos )    ) == 0 ) )
+		{
+			break;
+}
+		if ( (start_pos >= 32) && ( (rx1 & (1 << (start_pos-32) )) == 0 ) )
+		{
 			break;
 		}
 	}
 
-	/* count all 1-bits to check how many packets are there
-	 * to process in this NAPI poll */
-	for ( i = 31; i >=0; i-- ) {
-		if ( rx1 & (1 << i ))
-			cnt++;
-		if ( rx0 & (1 << i ))
-			cnt++;
-	}
+    np->currPosRxBd = start_pos;
 
-	*nrframes = cnt;
-	return frameNum;
+
+    return cnt;
 }
-
 /****************************************************************************/
 /** z77_poll - Rx poll function to support the NAPI functionality
  *
@@ -2065,40 +2208,32 @@ static u32 z77_get_oldest_frame(u32 rx0, u32 rx1, u32 *nrframes)
  *
  *  this is a softirq so dont use potentially sleeping sys calls!
  *
- * \return 0 if all packets were processed or 1 of not all was processed
+ * \return Number of processed pakets
  *
+ * \brief  The poll routine works according to
+ *         linux/Documentation/networking/NAPI_HOWTO.txt
+ *         addendum ts: NAPI_HOWTO.txt was removed from vanilla kernel in 2.6.24
  */
+/* ts: weight == budget! see net/core/dev.c */
 static int z77_poll(struct napi_struct *napi, int budget)
 {
-	int	i=0;
-	u32 start_pos=0, rx0=0, rx1=0, nrframes=0;
+		int npackets = 0;
 	struct z77_private *np = container_of(napi, struct z77_private, napi);
     struct net_device *dev = np->dev;
+    unsigned long flags;
 
-	/* bits in register are 1 for empty, 0 for full. we invert the logic */
-	rx0 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY0 );
-	rx1 = ~Z77READ_D32( Z077_BASE, Z077_REG_RXEMPTY1 );
+	Z77DBG( ETHT_MESSAGE_LVL3,"--> z77_poll:\n");
 
-	if( rx0 || rx1 ) {
-		start_pos=z77_get_oldest_frame(rx0, rx1, &nrframes);
-		Z77DBG( ETHT_MESSAGE_LVL3,
-				"z77_poll: %08x%08x sp %d #fr %d\n",
-				rx1, rx0, start_pos, nrframes );
-		for (i=0; i < nrframes; i++)
-		{	/* pass new arrived packets up the stack, from
-			   start_pos (oldest) nonempty packet to recent one */
-			z77_pass_packet( dev, start_pos );
-			start_pos++;
-			start_pos %= Z077_RBD_NUM;
-		}
+	npackets = z77_process_rx( dev, budget );
+
+	if ( npackets < budget ) { /* we are done, for NOW */
+		napi_complete_done(napi, npackets);
 	}
+	spin_lock_irqsave(&np->lock, flags);
+	Z077_ENABLE_IRQ( OETH_INT_RXF );
+	spin_unlock_irqrestore(&np->lock, flags);
 
-	if ( nrframes < budget ) {
-		/* we are done, for now */
-		napi_complete(napi);
-		Z077_ENABLE_IRQ( OETH_INT_RXF );
-	}
-	return nrframes;
+	return npackets;
 }
 
 /****************************************************************************/
@@ -2119,6 +2254,7 @@ static int z77_open(struct net_device *dev)
 	struct z77_private *np = netdev_priv(dev);
 	Z77DBG( ETHT_MESSAGE_LVL1, "-> %s %s\n", __FUNCTION__, dev->name );
 
+	netif_carrier_off(dev);
 	/* do PHY/MAC initialization with forced mode or autonegotiation */
 	if (chipset_init(dev, 1)) {
 		printk(KERN_ERR
@@ -2129,7 +2265,7 @@ static int z77_open(struct net_device *dev)
 	z77_bd_setup(dev);
 
 	/* clear any pending spurious IRQs */
-	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, 0x7f );
+	Z77WRITE_D32( Z077_BASE, Z077_REG_INT_SRC, Z077_IRQ_ALL );
 
 	/* hook in the Interrupt handler */
 	Z77DBG(ETHT_MESSAGE_LVL1, "%s: request IRQ %d\n", dev->name, dev->irq);
@@ -2145,6 +2281,15 @@ static int z77_open(struct net_device *dev)
 	add_timer(&np->timer);
 
 	napi_enable(&np->napi);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	tasklet_hrtimer_init(&np->tx_timer,
+			     z77_tx_timer,
+			     CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+#else
+	hrtimer_init(&np->tx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED_SOFT);
+	np->tx_timer.function = z77_tx_timer;
+#endif
 
 	netif_start_queue(dev);
 
@@ -2172,43 +2317,43 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	struct z77_private *np = netdev_priv(dev);
 	struct pci_dev *pcd = np->pdev;
 	unsigned char *buf = skb->data;
-	u32 txbEmpty = 0;
 #if defined(Z77_USE_VLAN_TAGGING)
 	unsigned int vlan_id = 0;
 	unsigned int vlan_tag = 0;
 #endif
 	unsigned int frm_len = 0;
-	int i = 0;
 	unsigned char idxTx = 0;
 	dma_addr_t dma_handle = 0;
 	u8* dst = NULL;
 	u8* src = NULL;
+	unsigned long flags;
+	int i, full;
+
+	spin_lock_irqsave(&np->lock, flags);
 
 	/* place Tx request in the recent Tx BD */
 	idxTx = np->nCurrTbd;
 
-	np->stats.collisions += Z077_GET_TBD_FLAG(idxTx, OETH_TX_BD_RETRY) >> 4;
+	/* go to next Tx BD */
+	np->nCurrTbd++;
+	np->nCurrTbd %= Z077_TBD_NUM;
 
-	/* Check if this Tx BD we use now is empty. If not -> drop . */
-	if ( idxTx < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0)
-			& (1<<idxTx);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1)
-			& (1 << (idxTx-32));
+	full = __z77_tx_full(dev, idxTx);
 
-	if (!txbEmpty) { /* congestion? */
-		netif_stop_queue(dev);
-		np->stats.tx_dropped++;
+	spin_unlock_irqrestore(&np->lock, flags);
 
-		/* free this skb */
+	if (full) {
+		netdev_warn(dev, "tx full\n");
 		dev_kfree_skb(skb);
+		np->stats.tx_dropped++;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 		return NETDEV_TX_BUSY;
 #else
 		return 1;
 #endif
 	}
+
+	np->stats.collisions += Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_RETRY) >> 4;
 
 	Z77DBG(ETHT_MESSAGE_LVL2, "%s: z77_send_packet[%d] len 0x%04x\n",
 			dev->name, idxTx, skb->len );
@@ -2287,23 +2432,18 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 	/* .. and free this skb */
 	dev_kfree_skb(skb);
 
-	/* go to next Tx BD */
-	np->nCurrTbd++;
-	np->nCurrTbd %= Z077_TBD_NUM;
-
-	/* Check if the next Tx BD is empty. If not -> stall . */
-	idxTx = np->nCurrTbd;
-	/* Z87 Core with extra TXBd empty Flags */
-	if ( idxTx < 32 )
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY0)
-			& (1<<idxTx);
-	else
-		txbEmpty = Z77READ_D32(Z077_BASE, Z077_REG_TXEMPTY1)
-			& (1 << (idxTx-32));
-
-	if (!txbEmpty) { /* congestion? */
+	/* congestion */
+	if (z77_tx_full(dev)) {
 		netif_stop_queue(dev);
-		Z77DBG(ETHT_MESSAGE_LVL2, "%s: stop_queue\n", __FUNCTION__ );
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+		tasklet_hrtimer_start(&np->tx_timer,
+				      ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
+				      HRTIMER_MODE_REL);
+#else
+		hrtimer_start(&np->tx_timer,
+			      ns_to_ktime(TX_TIMER_INTERVAL_NSEC),
+			      HRTIMER_MODE_REL_PINNED_SOFT);
+#endif
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
 	return NETDEV_TX_OK;
@@ -2322,7 +2462,7 @@ static void z77_i2c_delay(void)
 }
 
 /*******************************************************************/
-/** free the I2C bus 
+/** free the I2C bus
  *
  * \param dev			\IN net_device struct for this NIC
  *
@@ -2354,8 +2494,8 @@ static void z77_i2c_freeBus(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set RESTART condition 
+ * \brief
+ * Set RESTART condition
  *          ____
  *    SDA       |_
  *            ___
@@ -2395,10 +2535,10 @@ static int z77_i2c_start(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set STOP condition 
+ * \brief
+ * Set STOP condition
  *              __
- *    SDA  X___|    
+ *    SDA  X___|
  *            ___
  *    SCL  X_|
  *
@@ -2427,10 +2567,10 @@ static int z77_i2c_stop(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Check acknowledge 
+ * \brief
+ * Check acknowledge
  *         _     __
- *    SDA   |___|    expected 
+ *    SDA   |___|    expected
  *             ___
  *    SCL  ___|
  *
@@ -2462,8 +2602,8 @@ static int z77_i2c_checkAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set acknowledge 
+ * \brief
+ * Set acknowledge
  *         _     __
  *    SDA   |___|    set
  *             ___
@@ -2491,8 +2631,8 @@ static int z77_i2c_setAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Set not acknowledge 
+ * \brief
+ * Set not acknowledge
  *         _______
  *    SDA            set
  *             ___
@@ -2519,8 +2659,8 @@ static int z77_i2c_notAckn(struct net_device *dev)
  *
  * \return			0 or error code
  *
- * \brief 
- * Send a byte 
+ * \brief
+ * Send a byte
  *         _ ___ _
  *    SDA  _X___X_   set for each bit
  *             ___
@@ -2569,8 +2709,8 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
- * Read a byte 
+ * \brief
+ * Read a byte
  *         _ ___ _
  *    SDA  _X___X_   read before SCL risig edge for each bit
  *             ___
@@ -2634,7 +2774,7 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
+ * \brief
  * Read a defined length of bytes
  */
 int z77_i2c_read_msg(struct net_device *dev, struct z77_i2c_msg_st *msg, int stop)
@@ -2665,7 +2805,7 @@ int z77_i2c_read_msg(struct net_device *dev, struct z77_i2c_msg_st *msg, int sto
 		{
 			goto out_cleanup;
 		}
-		if( error1 ) 
+		if( error1 )
 		{
 			error = error1;
 			goto out_cleanup;
@@ -2698,7 +2838,7 @@ out_cleanup:
  *
  * \return			0 or error code
  *
- * \brief 
+ * \brief
  * Write a defined length of bytes
  */
 u32 z77_i2c_write_msg(struct net_device *dev, const struct z77_i2c_msg_st *msg, int stop)
@@ -2820,7 +2960,7 @@ static ssize_t z77_eeprod_mac_show(struct device *dev,
 	// Read magic/parity + 6 Byte MAC
 	i2cmes[1].flags = I2C_M_RD;
 	i2cmes[1].len = 7;
-	
+
 	if (z77_i2c_xfer_msg(ndev, i2cmes, 2)) {
 		dev_err(dev, "*** EEPROM Read ERROR\n");
 		return 0;
@@ -2842,10 +2982,10 @@ static ssize_t z77_eeprod_mac_show(struct device *dev,
 /*******************************************************************/
 /** attribute function to write MAC to EEPROM
  *
- * \buf		/OUT MAC address as a string in format 
+ * \buf		/OUT MAC address as a string in format
  *		12:56:89:cb:fe:0e
  *
- * \return	the number of accepted bytes => 
+ * \return	the number of accepted bytes =>
  *		will be always equal to count
  *
  */
@@ -2864,7 +3004,7 @@ static ssize_t z77_eeprod_mac_store(struct device *dev,
 
 	if (!buf || (count > 50))
 		return count;
-    
+
 	/* Copy input buffer */
 	snprintf(tmpBuffer, 50, "%s", buf);
 	tmpBufferPtr = tmpBuffer;
@@ -3032,9 +3172,9 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 		mac[3] = msgbuf[4];
 		mac[4] = msgbuf[5];
 		mac[5] = msgbuf[6];
-		
+
 		/* Check if MAC is valid and calc parity is equal */
-		if (   ((msgbuf[0] & 0xF0) == 0xB0) 
+		if (   ((msgbuf[0] & 0xF0) == 0xB0)
 		    && ((msgbuf[0] & 0x0F) == z77_eeprod_mac_calc_parity( ((u8 *)msgbuf) + 1, 6 ))
 		    && (is_valid_ether_addr(mac)) ) {
 			printk(KERN_INFO
@@ -3101,34 +3241,6 @@ cont_init:
 
 	Z77DBG(ETHT_MESSAGE_LVL1, "<-- %s()\n", __FUNCTION__);
 	return(0);
-}
-
-/*******************************************************************/
-/** The interrupt context Tx packet handler
- *
- * \brief Called from within main ISR context.
- *		  unmaps allocated PCI transfer memory region and updates
- *        stats info. No spin_lock here because main irq routine does
- *        local Eth core IRQ disabling already.
- *
- * \param dev		\IN net_device struct for this NIC
- *
- * \return -
- */
-static void z77_tx(struct net_device *dev)
-{
-	struct z77_private *np = netdev_priv(dev);
-
-	pci_unmap_single(np->pdev, np->txBd[np->txIrq].hdlDma,
-			Z77_ETHBUF_SIZE, DMA_TO_DEVICE);
-	np->txIrq++;
-	np->txIrq%= Z077_TBD_NUM;
-	np->stats.tx_packets++;
-
-	/* If we had stopped the queue due to a "tx full" condition,
-	 * wake up the queue. */
-	if (netif_queue_stopped(dev))
-		netif_wake_queue(dev);
 }
 
 /*****************************************************************************/
@@ -3242,6 +3354,13 @@ static int z77_close(struct net_device *dev)
 
 	free_irq(dev->irq, dev);
 
+	/* cancel tx_timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0)
+	tasklet_hrtimer_cancel(&np->tx_timer);
+#else
+	hrtimer_cancel(&np->tx_timer);
+#endif
+
 	/* free DMA resources */
 	for (i = 0; i < Z077_RBD_NUM; i++ )
 		dma_free_coherent(&pcd->dev, Z77_ETHBUF_SIZE,
@@ -3273,41 +3392,46 @@ static irqreturn_t z77_irq(int irq, void *dev_id)
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct z77_private *np = netdev_priv(dev);
 	int handled = 0;
+	u32 status, mask;
+	unsigned long flags;
 
-	u32 status = Z77READ_D32( Z077_BASE, Z077_REG_INT_SRC );
+	spin_lock_irqsave(&np->lock, flags);
+
+	status = Z77READ_D32(Z077_BASE, Z077_REG_INT_SRC) & Z077_IRQ_ALL;
+	mask = Z77READ_D32(Z077_BASE, Z077_REG_INT_MASK);
+	status &= mask;
 	if (!status) {
-		goto out;	/* It wasnt me, ciao. */
+		goto out;
 	}
+
+	/* disable interrupts */
+	Z077_DISABLE_IRQ(Z077_IRQ_ALL);
 
 	if (status & OETH_INT_RXF) {	/* Got a packet. */
-		/* reenabled in NAPI poll routine */
-		Z077_DISABLE_IRQ( OETH_INT_RXF );
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-		napi_schedule(&np->napi);
-	}
-
-	if (status & OETH_INT_TXB) {	/* Transmit complete. */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
-		z77_tx(dev);
-	}
-
-	if (status & OETH_INT_BUSY) {	/* RX FIFO overrun ? */
-		Z77WRITE_D32(Z077_BASE,
-				Z077_REG_INT_SRC, status & ~OETH_INT_RXE );
+		mask &= ~OETH_INT_RXF;
+		if (likely(napi_schedule_prep(&np->napi))) {
+			__napi_schedule(&np->napi);
+		} else {
+			np->stats.rx_dropped++;
+		}
 	}
 
 	if (status & OETH_INT_TXE) {	/* handle Tx Error */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_tx_err(dev);
 	}
 
 	if (status & OETH_INT_RXE) {	/* handle Rx Error */
-		Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status  );
 		z77_rx_err(dev);
 	}
+	/* acknowledge interrupts */
+	Z77WRITE_D32(Z077_BASE, Z077_REG_INT_SRC, status);
+
+	/* enable interrupts */
+	Z077_ENABLE_IRQ(mask);
 
 	handled = 1;
 out:
+	spin_unlock_irqrestore(&np->lock, flags);
 	return IRQ_RETVAL(handled);
 }
 
@@ -3383,6 +3507,7 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	np->instance  = chu->instance;
 	np->instCount = G_globalInstanceCount;
 	G_globalInstanceCount++;
+    np->currPosRxBd =   0;
 
 #if defined(Z77_USE_VLAN_TAGGING)
 	dev->features |= Z87_VLAN_FEATURES;
@@ -3448,47 +3573,15 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 
 	/* init the process context work queue function to restart Z77 */
 	INIT_WORK(&np->reset_task, z77_reset_task);
-#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
-	dev->open		= z77_open;
-	dev->stop		= z77_close;
-	dev->hard_start_xmit	= z77_send_packet;
-	dev->get_stats		= z77_get_stats;
-	dev->tx_timeout		= z77_tx_timeout;
-	dev->do_ioctl		= z77_ioctl;
-	dev->get_stats		= z77_get_stats;
-	dev->set_multicast_list	= z77_set_rx_mode;
-#else
-	dev->netdev_ops = &z77_netdev_ops;
-#endif
-	dev->watchdog_timeo	= MY_TX_TIMEOUT;
 
-	/* use PHY address from passed module parameter */
-	np->mii_if.phy_id_mask = 0x1f;
-	np->mii_if.reg_num_mask = 0x1f;
-	np->mii_if.dev = dev;
-	np->mii_if.mdio_read = z77_mdio_read;
-	np->mii_if.mdio_write = z77_mdio_write;
-
-	/* YES, we support the ethtool utility */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
-	SET_ETHTOOL_OPS(dev,    &z77_ethtool_ops);
-#else
-	dev->ethtool_ops = &z77_ethtool_ops;
-#endif
-	/* Data setup done, now setup Connection */
-	if (chipset_init(dev, 0)) {
-		printk(KERN_ERR "*** probe_z77: Ethernet core init failed!\n");
-		goto err_free_reg;
-	} else {
-		if (register_netdev(dev) != 0) {
-			return 0;
+	/* All members set up, start probing PHY with driver builtin functions */
+	if (probe_z77(dev) == 0) {
+		if (register_netdev(dev) == 0) {
+			if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac)){
+				dev_err(&dev->dev, "Error creating sysfs file z77_eeprod_mac\n");
+				goto err_free_reg;
+			}
 		}
-		if (device_create_file(&dev->dev, &dev_attr_linkstate))
-			dev_err(&dev->dev,
-				"Error creating sysfs file linkstate\n");
-		if (maceepromacc && device_create_file(&dev->dev, &dev_attr_z77_eeprod_mac))
-			dev_err(&dev->dev,
-				"Error creating sysfs file z77_eeprod_mac\n");
 		return 0;
 	}
 
