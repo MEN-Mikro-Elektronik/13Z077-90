@@ -641,7 +641,11 @@ static int z77_set_mac_address(struct net_device *dev, void *p)
 	if (!is_valid_ether_addr(addr->sa_data))
 		return -EADDRNOTAVAIL;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+	dev_addr_mod(dev, 0, addr->sa_data, dev->addr_len);
+#else
 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
+#endif
 
 	/* shut-down */
 	z77_reset( dev );
@@ -3143,7 +3147,11 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 			printk(KERN_INFO
 				"current MAC %02x:%02x:%02x:%02x:%02x:%02x is valid, keeping it.\n",
 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+			dev_addr_mod(dev, 0, mac, 6);
+#else
 			memcpy(dev->dev_addr, mac, 6);
+#endif
 			goto cont_init;
 		}
 
@@ -3180,7 +3188,11 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 			printk(KERN_INFO
 				"got MAC %02x:%02x:%02x:%02x:%02x:%02x from MAC EEPROM, assigning it.\n",
 				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+			dev_addr_mod(dev, 0, mac, 6);
+#else
 			memcpy(dev->dev_addr, mac, 6);
+#endif
 			z77_store_mac( dev );
 			goto cont_init;
 		}
@@ -3197,7 +3209,11 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 					"got MAC %02x:%02x:%02x:%02x:%02x:%02x from Board ID EEPROM, assigning it.\n",
 					mac[0], mac[1], mac[2],
 					mac[3], mac[4], mac[5] );
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+				dev_addr_mod(dev, 0, mac, 6);
+#else
 				memcpy(dev->dev_addr, mac, 6);
+#endif
 				z77_store_mac( dev );
 				goto cont_init;
 			}
