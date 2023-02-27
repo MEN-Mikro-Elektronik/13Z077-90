@@ -3515,7 +3515,11 @@ int men_16z077_probe( CHAMELEON_UNIT_T *chu )
 	spin_lock_init(&np->mii_lock);
 	pci_set_drvdata(chu->pdev, dev);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+	netif_napi_add( dev, &np->napi, z77_poll );
+#else
 	netif_napi_add( dev, &np->napi, z77_poll, Z077_WEIGHT );
+#endif
 	np->dev = dev;
 
 	/* store Z87 instance to set its PHY address later,
