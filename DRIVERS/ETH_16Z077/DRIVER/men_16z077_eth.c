@@ -96,26 +96,12 @@ static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 /* all used IRQs on the Z87 */
 #define Z077_IRQ_ALL (OETH_INT_TXE | OETH_INT_RXF | OETH_INT_RXE)
 
-/* from 3.1 on (acc. to free electrons) DMA bit mask changed */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0)
 # define Z87_BIT_MASK_32BIT		DMA_BIT_MASK(32)
-#else
-# define Z87_BIT_MASK_32BIT		DMA_32BIT_MASK
-#endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 # define Z87_VLAN_FEATURES (NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX)
-#else
-# define Z87_VLAN_FEATURES (NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX)
-#endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,0,0) && !defined(RHEL_RELEASE)
-# define vlan_tag_present_func(x)	vlan_tx_tag_present(x)
-# define vlan_tag_get_func(x)		vlan_tx_tag_get(x)
-#else
 # define vlan_tag_present_func(x)	skb_vlan_tag_present(x)
 # define vlan_tag_get_func(x)		skb_vlan_tag_get(x)
-#endif
 
 #ifdef NIOS_II
 # error NIOS_II (no-MMU) no longer supported. Use older driver if needed!
@@ -274,14 +260,7 @@ static int z77_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd);
 static void z77_hash_table_setup(struct net_device *dev);
 static int ether_gen_crc(struct net_device *dev, u8 *data);
 #if defined(Z77_USE_VLAN_TAGGING)
-# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid);
-# endif
-#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-static void z77_vlan_rx_add_vid(struct net_device *dev, unsigned short vid);
-#else
 static int z77_vlan_rx_add_vid(struct net_device *dev, unsigned short proto, unsigned short vid);
-#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
@@ -516,18 +495,14 @@ static int ether_gen_crc(struct net_device *dev, u8 *data)
 static void z77_hash_table_setup(struct net_device *dev)
 {
 	int i = 0;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
 	struct netdev_hw_addr *ha = NULL;
-#else
-	struct dev_mc_list *ptr=NULL;
-#endif
 
 	u8 *p=NULL;
 	struct z77_private *np = netdev_priv(dev);
 	u32 hash0 = 0;
 	u32 hash1 = 0;
 	u32 bin_pos = 0;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+
 	Z77DBG( ETHT_MESSAGE_LVL2,
 			MEN_Z77_DRV_NAME
 			" z77_hash_table_setup: mc_count = %d\n",
@@ -555,38 +530,6 @@ static void z77_hash_table_setup(struct net_device *dev)
 			}
 		}
 	}
-#else
-	Z77DBG( ETHT_MESSAGE_LVL2,
-			MEN_Z77_DRV_NAME
-			" z77_hash_table_setup: mc_count = %d\n",
-			dev->mc_count);
-
-	if ((dev->flags & IFF_MULTICAST) && dev->mc_count) {
-		if (dev->mc_count <= MAX_MCAST_LST) {
-			for ( ptr = dev->mc_list; ptr ; ptr = ptr->next ) {
-				/* check if its a valid MC addr: bit1 in
-				 * mac[0] set ? */
-				if (!(*ptr->dmi_addr & 1))
-					continue;
-
-				memcpy(np->mcast_lst[i],
-						ptr->dmi_addr,
-						MAC_ADDR_LEN);
-				p = (u8*)(np->mcast_lst[i]);
-
-				/* collect every hash bit, OR it together and
-				 * update HASH0 and HASH1 registers */
-				bin_pos = ether_gen_crc(dev, p );
-
-				if (bin_pos > 31)
-					hash1 |=( 1<<(bin_pos-32));
-				else
-					hash0 |=( 1<<bin_pos);
-				i++;
-			}
-		}
-	}
-#endif
 
 	Z77DBG( ETHT_MESSAGE_LVL3,
 			MEN_Z77_DRV_NAME
@@ -625,8 +568,7 @@ static inline int z77_tx_full(struct net_device *dev)
 
 	return full;
 }
-/* new API: net_device_ops moved out of struct net_device in own ops struct */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
+
 /******************************************************************************
  ** set new MAC address: unused here
  *
@@ -684,8 +626,7 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_tx_timeout		= z77_tx_timeout,
 	.ndo_set_rx_mode	= z77_set_rx_mode,
 #if defined(RHEL_RELEASE)
-# if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)) && \
-     (LINUX_VERSION_CODE <  KERNEL_VERSION(4,18,0))
+# if (LINUX_VERSION_CODE <  KERNEL_VERSION(4,18,0))
 	.extended
 # endif
 #endif
@@ -693,14 +634,10 @@ static const struct net_device_ops z77_netdev_ops = {
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= z77_set_mac_address,
 #if defined(Z77_USE_VLAN_TAGGING)
-# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-	.ndo_vlan_rx_kill_vid   = z77_vlan_rx_kill_vid,
-# endif
 	.ndo_vlan_rx_add_vid	= z77_vlan_rx_add_vid,
 #endif
 
 };
-#endif
 
 /******************************************************************************
  ** z77_sda_in - read SDA Pin on SMB Register
@@ -1315,13 +1252,9 @@ static int z77_ethtool_set_settings(struct net_device *dev,
 	if (ecmd->cmd != ETHTOOL_TEST) {
 		res = mii_ethtool_sset(&np->mii_if, ecmd);
 		/* wait to let settings take effect */
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,30)
 		/* set_current_state(TASK_INTERRUPTIBLE); */
 		schedule_timeout_interruptible(CONFIG_HZ/4);
-#else
-		current->state = TASK_INTERRUPTIBLE;
-		schedule_timeout(CONFIG_HZ/4);
-#endif
+
 		/* check PHY again, set MODER[10] to match
 		 * duplexity setting in it */
 		mii_ethtool_gset(&np->mii_if, &ncmd);
@@ -1505,12 +1438,8 @@ static int z77_bd_setup(struct net_device *dev)
  * \param vid		\IN VLAN group ID
  *
  */
-#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-static void z77_vlan_rx_add_vid(struct net_device *dev, unsigned short vid)
-#else
 static int z77_vlan_rx_add_vid(struct net_device *dev,
 		unsigned short proto, unsigned short vid)
-#endif
 {
 	struct z77_private *np = netdev_priv(dev);
 	unsigned long flags;
@@ -1526,44 +1455,9 @@ static int z77_vlan_rx_add_vid(struct net_device *dev,
 				__FUNCTION__, vid );
 	}
 	spin_unlock_irqrestore (&np->lock, flags);
-#if defined(RHEL_RELEASE) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-	return;
-#else
 	return 0;
-#endif
 }
 
-# if LINUX_VERSION_CODE < KERNEL_VERSION(3,0,0)
-/****************************************************************************/
-/** z77_vlan_rx_kill_vid - delete a VLAN group ID
- *
- * \param dev		\IN net_device struct for this NIC
- * \param vid		\IN VLAN group ID
- *
- */
-static void z77_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid)
-{
-	struct z77_private *np = netdev_priv(dev);
-	unsigned long flags;
-
-	spin_lock_irqsave(&np->lock, flags);
-
-	if (!np->vlgrp) {
-		Z77DBG(ETHT_MESSAGE_LVL1, "%s: vlgrp = NULL!\n", __FUNCTION__);
-	} else {
-		Z77DBG(ETHT_MESSAGE_LVL1,
-				"%s: killing VLAN:%d (vlgrp entry:%p)\n",
-				__FUNCTION__,
-				vid,
-				vlan_group_get_device(np->vlgrp, vid));
-
-		vlan_group_set_device(np->vlgrp, vid, NULL);
-
-	}
-	spin_unlock_irqrestore (&np->lock, flags);
-	return;
-}
-# endif
 #endif
 
 /****************************************************************************/
@@ -1959,19 +1853,7 @@ static int __init probe_z77(struct net_device *dev)
 	struct z77_private *np = netdev_priv(dev);
 
 	netdev_info(dev, "%s found at 0x%08lx\n", cardname, dev->base_addr);
-
-#if LINUX_VERSION_CODE  < KERNEL_VERSION(2,6,30)
-	dev->open		= z77_open;
-	dev->stop		= z77_close;
-	dev->hard_start_xmit	= z77_send_packet;
-	dev->get_stats		= z77_get_stats;
-	dev->tx_timeout		= z77_tx_timeout;
-	dev->do_ioctl		= z77_ioctl;
-	dev->get_stats		= z77_get_stats;
-	dev->set_multicast_list	= z77_set_rx_mode;
-#else
 	dev->netdev_ops = &z77_netdev_ops;
-#endif
 	dev->watchdog_timeo = MY_TX_TIMEOUT;
 
 	/* use PHY address from passed module parameter */
@@ -1982,11 +1864,7 @@ static int __init probe_z77(struct net_device *dev)
 	np->mii_if.mdio_write = z77_mdio_write;
 
 	/* YES, we support the ethtool utility */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0)
-	SET_ETHTOOL_OPS(dev, &z77_ethtool_ops);
-#else
 	dev->ethtool_ops = &z77_ethtool_ops;
-#endif
 
 	/* data setup done, now setup connection */
 	if (chipset_init(dev, 0)) {
@@ -2350,11 +2228,7 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 		netdev_warn(dev, "tx full\n");
 		dev_kfree_skb(skb);
 		np->stats.tx_dropped++;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
-		return NETDEV_TX_BUSY;
-#else
 		return 1;
-#endif
 	}
 
 	np->stats.collisions += Z077_GET_TBD_FLAG( idxTx, OETH_TX_BD_RETRY) >> 4;
@@ -2449,11 +2323,8 @@ static int z77_send_packet(struct sk_buff *skb, struct net_device *dev)
 			      HRTIMER_MODE_REL_PINNED_SOFT);
 #endif
 	}
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
-	return NETDEV_TX_OK;
-#else
+
 	return 0;
-#endif
 }
 
 /*******************************************************************/
@@ -3218,7 +3089,6 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 				goto cont_init;
 			}
 		}
-#if LINUX_VERSION_CODE > KERNEL_VERSION(3,4,0)
 		printk(KERN_INFO
 			"MAC from BOARD EEPROM is invalid or no board EEPROM found. Resorting to random MAC.\n");
 		eth_hw_addr_random( dev );
@@ -3227,7 +3097,6 @@ static int chipset_init(struct net_device *dev, u32 first_init)
 			dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2],
 			dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5] );
 		z77_store_mac( dev );
-#endif
 	}
 
 cont_init:
@@ -3312,9 +3181,6 @@ static void z77_pass_packet( struct net_device *dev, unsigned int idx )
 		/* tell network stack... */
 		netif_receive_skb(skb);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0) && !defined(RHEL_RELEASE)
-		dev->last_rx = jiffies;
-#endif
 		np->stats.rx_bytes += pkt_len;
 		np->stats.rx_packets++;
 
